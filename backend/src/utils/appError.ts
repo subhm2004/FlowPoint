@@ -13,7 +13,12 @@ export class AppError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.errorCode = errorCode;
-    Error.captureStackTrace(this, this.constructor);
+    const Err = Error as typeof Error & {
+      captureStackTrace?: (target: object, constructorOpt?: new (...args: unknown[]) => unknown) => void;
+    };
+    if (typeof Err.captureStackTrace === "function") {
+      Err.captureStackTrace(this, this.constructor);
+    }
   }
 }
 

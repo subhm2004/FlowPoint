@@ -1,7 +1,11 @@
 import passport from "passport";
 import { Request } from "express";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { Strategy as LocalStrategy } from "passport-local";
+import {
+  Strategy as GoogleStrategy,
+  Profile,
+  VerifyCallback,
+} from "passport-google-oauth20";
+import { Strategy as LocalStrategy, VerifyFunction } from "passport-local";
 
 import { config } from "./app.config";
 import { NotFoundException } from "../utils/appError";
@@ -20,7 +24,13 @@ passport.use(
       scope: ["profile", "email"],
       passReqToCallback: true,
     },
-    async (req: Request, accessToken, refreshToken, profile, done) => {
+    async (
+      req: Request,
+      _accessToken: string,
+      _refreshToken: string,
+      profile: Profile,
+      done: VerifyCallback
+    ) => {
       try {
         const { email, sub: googleId, picture } = profile._json;
         console.log(profile, "profile");
@@ -44,6 +54,18 @@ passport.use(
   )
 );
 
+const localVerify: VerifyFunction = (email, password, done) => {
+  void (async () => {
+    try {
+      const user = await verifyUserService({ email, password });
+      done(null, user);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Invalid email or password";
+      done(error, false, { message });
+    }
+  })();
+};
+
 passport.use(
   new LocalStrategy(
     {
@@ -51,16 +73,9 @@ passport.use(
       passwordField: "password",
       session: true,
     },
-    async (email, password, done) => {
-      try {
-        const user = await verifyUserService({ email, password });
-        return done(null, user);
-      } catch (error: any) {
-        return done(error, false, { message: error?.message });
-      }
-    }
+    localVerify
   )
 );
 
-passport.serializeUser((user: any, done) => done(null, user));
-passport.deserializeUser((user: any, done) => done(null, user));
+passport.serializeUser((user: Express.User, done) => done(null, user));
+passport.deserializeUser((user: Express.User, done) => done(null, user));
