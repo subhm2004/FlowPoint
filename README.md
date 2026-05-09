@@ -38,7 +38,6 @@ Behind the landing page: a full-stack app where teams organize work, assign owne
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
 - [Scripts reference](#scripts-reference)
-- [License](#license)
 
 ---
 
@@ -393,12 +392,6 @@ Run after changing **`backend/src/utils/role-permission.ts`** so MongoDB roles s
 | `backend` | `npm run seed` | Seed roles |
 | `backend` | `npm run build` | Compile TypeScript to `dist/` |
 | `backend` | `npm start` | `node dist/index.js` |
-
----
-
-## License
-
-Add your license here (e.g. MIT) when you publish the repository.
 
 ---
 
