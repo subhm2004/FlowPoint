@@ -31,8 +31,9 @@ Behind the landing page: a full-stack app where teams organize work, assign owne
 - [Backend structure & API](#backend-structure--api)
 - [Environment variables](#environment-variables)
 - [Getting started](#getting-started)
+- [Local development (recommended)](#local-development-recommended)
 - [Database seeding](#database-seeding)
-- [Authentication flows](#authentication-flows)
+- [Authentication (JWT)](#authentication-jwt)
 - [Security notes](#security-notes)
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
@@ -56,24 +57,26 @@ Behind the landing page: a full-stack app where teams organize work, assign owne
 flowchart LR
   subgraph client [React Client]
     UI[Vite + React + TS]
+    Store[JWT in localStorage]
   end
   subgraph api [Express API]
     REST[REST JSON]
-    Auth[Passport + Session]
+    JWT[JWT verify middleware]
     Val[Zod Validation]
   end
   subgraph db [MongoDB]
     Mongo[(Mongoose)]
   end
-  UI -->|HTTPS / Axios withCredentials| REST
-  REST --> Auth
+  UI -->|HTTPS + Bearer JWT| REST
+  Store -.->|Authorization header| REST
+  REST --> JWT
   REST --> Val
   REST --> Mongo
 ```
 
-- The **browser** talks to the API over HTTP(S). **Session cookies** identify the user after login (`withCredentials: true` in Axios).
-- **CORS** is restricted to `FRONTEND_ORIGIN` so only your web app can use cookies in the browser.
-- **Google OAuth** is handled by Passport; the API redirects back to the frontend on success or failure.
+- The **browser** calls the API over HTTP(S). After login or register, the API returns a **JWT**; the client stores it (e.g. `localStorage`) and sends `Authorization: Bearer <token>` on protected routes.
+- **CORS** allows only configured **origins** (see `FRONTEND_ORIGIN`). Multiple origins are supported as a **comma-separated** list (e.g. production URL + `http://localhost:5173`).
+- **No session cookies** are required for API auth; `credentials` mode is off for simpler cross-origin behavior with JWT.
 
 ---
 
@@ -86,23 +89,23 @@ flowchart LR
 | **State & data** | TanStack Query, Zustand, React Router 7 |
 | **Forms** | React Hook Form + Zod resolvers |
 | **Tables / URL state** | TanStack Table, nuqs |
-| **API client** | Axios (base URL from `VITE_API_BASE_URL`) |
+| **API client** | Axios (`VITE_API_BASE_URL` or same-origin `/api` via dev proxy) |
 | **Server** | Express 4, TypeScript |
 | **Database** | MongoDB with Mongoose 8 |
-| **Auth** | Passport (local + Google OAuth 20), bcrypt, cookie-session |
-| **Validation** | Zod (shared pattern on controllers) |
+| **Auth** | Email/password + **JWT** (jsonwebtoken), bcrypt |
+| **Validation** | Zod (controllers) |
 
 ---
 
 ## Features (detailed)
 
-### Authentication & sessions
+### Authentication
 
-- **Register** with email and password (`POST /api/auth/register`); passwords are hashed (**bcrypt**) before storage.
-- **Login** with Passport **local** strategy (`POST /api/auth/login`); on success the API establishes a **session**.
-- **Logout** (`POST /api/auth/logout`) clears the session.
-- **Google sign-in**: user is sent to `GET /api/auth/google`; Google redirects to `GET /api/auth/google/callback`; on success the API redirects to **`FRONTEND_ORIGIN/workspace/<workspaceId>`**; on failure to **`FRONTEND_GOOGLE_CALLBACK_URL?status=failure`** (this should be your React route that shows the failure UI, e.g. `/google/oauth/callback`).
-- The **Axios** client sends cookies on every request (`withCredentials: true`). A **401** with message `"Unauthorized"` redirects the user to the landing page.
+- **Register** — `POST /api/auth/register` creates user, default workspace, and member role; returns **`token`** + **`user`** (password never returned).
+- **Login** — `POST /api/auth/login` verifies email/password; returns **`token`** + **`user`**.
+- **Logout** — `POST /api/auth/logout` is a no-op on the server (client clears stored JWT).
+- **Current user** — `GET /api/user/current` requires a valid **Bearer** token.
+- The Axios client attaches the token from storage; **401** with a stale token clears storage and can redirect home (sign-in/sign-up and unauthenticated checks do not trigger a hard redirect loop).
 
 ### Workspaces
 
@@ -113,22 +116,21 @@ flowchart LR
 ### Members & invitations
 
 - Users join a workspace as **members** with a **role** (`OWNER`, `ADMIN`, `MEMBER`).
-- **Invite** flow via shareable invite URLs (see client route `/invite/workspace/:inviteCode/join`).
-- **Admins** can add members and (per current rules) remove members; **only OWNER** can change another member’s role.
+- **Invite** flow via shareable URLs: **`/invite/workspace/:inviteCode/join`** (deep links require SPA hosting rewrites — see [Deployment](#deployment)).
+- **Admins** can add members and remove members; **only OWNER** can change another member’s role.
 
 ### Projects
 
 - **Projects** are scoped to a workspace and group related tasks.
-- Create, update, delete according to **RBAC** (owners and admins typically have full project CRUD).
+- Create, update, delete according to **RBAC**.
 
 ### Tasks
 
-- **Tasks** reference both a **project** and a **workspace** for consistent scoping and queries.
+- **Tasks** reference both a **project** and a **workspace**.
 - **Status**: `BACKLOG`, `TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`.
 - **Priority**: `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
-- **Assignment**: optional `assignedTo` (user id); **dueDate** supports overdue logic in analytics.
+- **Assignment**: optional `assignedTo`; **dueDate** supports overdue logic in analytics.
 - **taskCode**: auto-generated readable identifier.
-- UI includes **tables**, **filters**, **recent tasks**, and **create/edit** forms aligned with backend enums.
 
 ### Role-based access control (RBAC)
 
@@ -140,31 +142,29 @@ Authoritative mapping: **`backend/src/utils/role-permission.ts`**.
 | **ADMIN** | Add/remove members; workspace **settings**; full project & task CRUD. **Cannot** delete the workspace or change member roles. |
 | **MEMBER** | **View**; **create** and **edit** tasks only — no task delete, no project/workspace admin. |
 
-Permissions are also stored on **Role** documents in MongoDB. After changing the TypeScript map, run **`npm run seed`** so the database stays aligned.
+Permissions are stored on **Role** documents in MongoDB. After changing the TypeScript map, run **`npm run seed`** in `backend/`.
 
 ### Dashboard & landing
 
-- **Workspace dashboard**: high-level metrics and entry points into tasks and projects.
+- **Workspace dashboard**: metrics and entry points into tasks and projects.
 - **Project detail** views with task context.
-- **Public landing**: marketing sections (features, how it works, testimonials, FAQ), GitHub link, sign-in / sign-up.
+- **Public landing**: marketing sections, sign-in / sign-up.
 
 ---
 
 ## Data model
 
-High-level relationships (Mongoose `ref` where applicable):
-
 | Entity | Purpose |
 |--------|---------|
 | **User** | Account (email, password hash, profile fields, current workspace pointer). |
-| **Account** | Linked OAuth provider (e.g. Google) tied to a user. |
+| **Account** | Provider link for the user (e.g. email strategy uses `EMAIL` + email as `providerId`). |
 | **Workspace** | Team container; owner reference. |
 | **Member** | Join table: user ↔ workspace with **role**. |
-| **Role** | Named role with array of **permission** strings (seeded from code). |
+| **Role** | Named role with **permission** strings (seeded from code). |
 | **Project** | Belongs to workspace. |
-| **Task** | Belongs to project + workspace; assignedTo → User; createdBy → User. |
+| **Task** | Belongs to project + workspace; `assignedTo` / `createdBy` → User. |
 
-Exact fields live under `backend/src/models/`.
+Exact fields: `backend/src/models/`.
 
 ---
 
@@ -173,8 +173,7 @@ Exact fields live under `backend/src/models/`.
 | Route | Description |
 |-------|-------------|
 | `/` | Public landing |
-| `/sign-in`, `/sign-up` | Authentication |
-| `/google/oauth/callback` | Google OAuth **failure** UI (query `status=failure`) |
+| `/sign-in`, `/sign-up` | Email/password auth |
 | `/invite/workspace/:inviteCode/join` | Accept workspace invite |
 | `/workspace/:workspaceId` | Workspace dashboard |
 | `/workspace/:workspaceId/tasks` | Tasks |
@@ -182,12 +181,12 @@ Exact fields live under `backend/src/models/`.
 | `/workspace/:workspaceId/settings` | Workspace settings |
 | `/workspace/:workspaceId/project/:projectId` | Project detail |
 
-Key folders:
+Folders:
 
-- `client/src/components/` — UI building blocks (layout, workspace, forms, shadcn-style `ui/`).
+- `client/src/components/` — UI (layout, workspace, forms, `ui/`).
 - `client/src/page/` — Route-level pages.
-- `client/src/lib/` — API client (`axios-client.ts`), utilities.
-- `client/src/routes/` — Route configuration and guards.
+- `client/src/lib/` — API client, `auth-token.ts`, `base-url.ts`.
+- `client/src/routes/` — Route config and guards.
 
 ---
 
@@ -196,52 +195,46 @@ Key folders:
 Routes are mounted under **`BASE_PATH`** (default **`/api`**).
 
 | Mount path | Auth | Responsibility |
-|------------|------|------------------|
-| `/api/auth` | Public (except session for callback) | Register, login, logout, Google OAuth |
-| `/api/user` | Session required | Current user profile / preferences |
-| `/api/workspace` | Session required | Workspaces, analytics, settings |
-| `/api/member` | Session required | Members, invites |
-| `/api/project` | Session required | Projects |
-| `/api/task` | Session required | Tasks |
+|------------|------|----------------|
+| `/api/auth` | Public | Register, login, logout |
+| `/api/user` | JWT required | Current user |
+| `/api/workspace` | JWT required | Workspaces, analytics, settings |
+| `/api/member` | JWT required | Members, invite join |
+| `/api/project` | JWT required | Projects |
+| `/api/task` | JWT required | Tasks |
 
-Implementation patterns:
+Patterns:
 
-- **`isAuthenticated`** middleware protects private routers.
-- **`roleGuard`** checks permission arrays for destructive or sensitive actions.
-- **Zod** parses `req.body` / params in controllers; invalid input returns structured errors.
-- **Central `errorHandler`** maps exceptions to HTTP responses.
+- **`isAuthenticated`** — validates Bearer JWT, loads user, sets `req.user`.
+- **`roleGuard`** — permission checks for sensitive actions.
+- **Zod** — request validation; central **`errorHandler`** maps errors to HTTP responses.
 
 ---
 
 ## Environment variables
 
-Never commit real `.env` files. Use **`backend/.env.example`** and **`client/.env.example`** as templates.
+Never commit real **`.env`** files. Use **`backend/.env.example`** and **`client/.env.example`**.
 
 ### Backend (`backend/.env`)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `PORT` | Optional | Server port (default `5000` in code if unset — set explicitly to avoid surprises). |
-| `NODE_ENV` | Recommended | `development` or `production` (affects **secure** session cookies). |
+| `PORT` | Optional | Server port (default `5000` in code if unset). |
+| `NODE_ENV` | Recommended | `development` or `production`. |
 | `BASE_PATH` | Optional | API prefix (default `/api`). |
 | `MONGO_URI` | **Yes** | MongoDB connection string. |
-| `SESSION_SECRET` | **Yes** | Secret key(s) for signing session cookies (use a long random value in production). |
-| `SESSION_EXPIRES_IN` | **Yes** | Required by env loader. Note: cookie **`maxAge`** is still **fixed at 24h** in `backend/src/index.ts` unless you connect it to this value. |
-| `GOOGLE_CLIENT_ID` | **Yes*** | Google OAuth client ID. |
-| `GOOGLE_CLIENT_SECRET` | **Yes*** | Google OAuth secret. |
-| `GOOGLE_CALLBACK_URL` | **Yes** | Must match Google Console **Authorized redirect URI** (e.g. `http://localhost:8000/api/auth/google/callback`). |
-| `FRONTEND_ORIGIN` | **Yes** | Exact origin of the React app for **CORS** (e.g. `http://localhost:5173`). |
-| `FRONTEND_GOOGLE_CALLBACK_URL` | **Yes** | Full URL for **failed** Google login redirect (e.g. `http://localhost:5173/google/oauth/callback`). |
-
-\*The current `getEnv` helper throws if variables are missing — for local work without Google you may need placeholder values or a small code change to make OAuth optional.
+| `JWT_SECRET` | **Yes** | Secret for signing access tokens (long random string in production). |
+| `JWT_EXPIRES_IN` | Optional | `jsonwebtoken` expiry (default `7d` in app config). |
+| `FRONTEND_ORIGIN` | **Yes** | Allowed browser origin(s) for **CORS**. **Comma-separated** for multiple values, e.g. `https://your-app.vercel.app,http://localhost:5173`. |
 
 ### Frontend (`client/.env`)
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_API_BASE_URL` | API base URL including `/api` if the server uses `BASE_PATH=/api` (e.g. `http://localhost:8000/api`). |
+| `VITE_API_BASE_URL` | **Production / direct API:** full URL ending in `/api`, e.g. `https://your-api.onrender.com/api`. **Local dev with proxy:** use `/api` (see [Local development](#local-development-recommended)). |
+| `VITE_DEV_PROXY_TARGET` | Optional. Dev only. Backend URL for Vite proxy (default `http://127.0.0.1:8000`). |
 
-**Production:** set `VITE_API_BASE_URL` at build time to your public API URL.
+**Vercel / CI:** set `VITE_API_BASE_URL` at **build** time; Vite inlines it into the bundle.
 
 ---
 
@@ -249,20 +242,14 @@ Never commit real `.env` files. Use **`backend/.env.example`** and **`client/.en
 
 ### Prerequisites
 
-- **Node.js** (LTS recommended)
+- **Node.js** (LTS)
 - **MongoDB** (local or [Atlas](https://www.mongodb.com/cloud/atlas))
-- Optional: **Google Cloud** OAuth client
 
 ### 1. Clone and install
 
 ```bash
 git clone <your-repo-url>
 cd Task_Managemet
-```
-
-Install **backend** and **client** separately:
-
-```bash
 cd backend && npm install && cd ..
 cd client && npm install && cd ..
 ```
@@ -274,16 +261,16 @@ cp backend/.env.example backend/.env
 cp client/.env.example client/.env
 ```
 
-Edit both files: set `MONGO_URI`, `SESSION_SECRET`, origins, and Google keys if used. Ensure **`FRONTEND_ORIGIN`** matches the URL where Vite runs.
+- **Backend:** set `MONGO_URI`, `JWT_SECRET`, and `FRONTEND_ORIGIN` (include your Vite URL when testing from the browser against a local API).
+- **Client:** for the smoothest local experience, rely on **`client/.env.development`** (already in repo) which sets `VITE_API_BASE_URL=/api` and uses the Vite proxy.
 
 ### 3. Seed roles
 
 ```bash
-cd backend
-npm run seed
+cd backend && npm run seed && cd ..
 ```
 
-### 4. Run
+### 4. Run (two terminals)
 
 **Terminal A — API**
 
@@ -299,54 +286,60 @@ cd client
 npm run dev
 ```
 
-Open the URL Vite prints (commonly `http://localhost:5173`).
+Open the URL Vite prints (usually `http://localhost:5173`).
 
-### 5. Production build (frontend only)
+### 5. Production build (frontend)
 
 ```bash
 cd client
 npm run build
-npm run preview   # optional local test of dist/
+npm run preview   # optional: test dist locally
 ```
 
 ---
 
-## Database seeding
+## Local development (recommended)
 
-The **Role** collection stores permission arrays that should mirror `RolePermissions` in TypeScript.
+- **`client/.env.development`** sets `VITE_API_BASE_URL=/api`.
+- **`client/vite.config.ts`** proxies **`/api`** → **`http://127.0.0.1:8000`** (override with `VITE_DEV_PROXY_TARGET`).
+- The browser only talks to the Vite origin, so you avoid **CORS** issues while developing.
+- Ensure the **backend** is running on the proxied port (default **8000** matches a typical `backend/.env`).
+
+To call a **remote** API from local Vite instead, set in `.env.development` or `.env.local`:
+
+`VITE_API_BASE_URL=https://your-deployed-api.example.com/api`
+
+and add your dev origin to the backend’s **`FRONTEND_ORIGIN`** list on the server.
+
+---
+
+## Database seeding
 
 ```bash
 cd backend
 npm run seed
 ```
 
-Run whenever you change **`backend/src/utils/role-permission.ts`** so new or updated roles are reflected for existing databases.
+Run after changing **`backend/src/utils/role-permission.ts`** so MongoDB roles stay aligned.
 
 ---
 
-## Authentication flows
+## Authentication (JWT)
 
-### Email / password
-
-1. Client `POST /api/auth/register` then user signs in via `POST /api/auth/login`.
-2. Session cookie is set; subsequent requests include it automatically with `withCredentials`.
-
-### Google
-
-1. User clicks Google button → browser navigates to `GET {VITE_API_BASE_URL}/auth/google` (i.e. `/api/auth/google`).
-2. Google redirects to **`GOOGLE_CALLBACK_URL`** on your API.
-3. On success, API redirects to **`{FRONTEND_ORIGIN}/workspace/{currentWorkspaceId}`**.
-4. On failure, API redirects to **`FRONTEND_GOOGLE_CALLBACK_URL?status=failure`** — should load **`/google/oauth/callback`** in the React app.
+1. **Register** — client `POST /api/auth/register` → stores **`token`**, navigates (e.g. to workspace).
+2. **Login** — `POST /api/auth/login` → same.
+3. **Protected calls** — Axios reads the token from storage and sets **`Authorization: Bearer …`**.
+4. **Expiry / invalid token** — API returns **401**; client may clear token and send the user home; sign-in page does not prefetch `/user/current` in a way that causes redirect loops.
 
 ---
 
 ## Security notes
 
-- Use **HTTPS** in production so `secure` session cookies work.
-- Keep **`SESSION_SECRET`** long and random; rotate if leaked.
-- Restrict **CORS** to your real frontend origin only.
-- Store **MongoDB credentials** in secrets, not in git.
-- Review **permission checks** before exposing new endpoints.
+- Use **HTTPS** in production for the API and the SPA.
+- **`JWT_SECRET`**: long, random, stored as a secret; rotate if compromised.
+- **CORS**: keep **`FRONTEND_ORIGIN`** to real front-end origins only (comma-separated list is fine).
+- **MongoDB**: credentials in env / secret manager, not in git.
+- **JWT in `localStorage`**: standard tradeoff for SPAs; mitigate with HTTPS, short-ish `JWT_EXPIRES_IN`, and XSS hygiene.
 
 ---
 
@@ -354,30 +347,37 @@ Run whenever you change **`backend/src/utils/role-permission.ts`** so new or upd
 
 | Component | Typical approach |
 |-----------|------------------|
-| **Frontend** | Vercel, Netlify, Cloudflare Pages — build `client`, set `VITE_API_BASE_URL` at build time, publish `dist/`. |
-| **Backend** | Railway, Render, Fly.io, VPS — run `node` after `npm run build` (verify your `backend` build script copies artifacts correctly). |
-| **Database** | MongoDB Atlas or managed Mongo. |
+| **Frontend** | **Vercel** — project **Root Directory** = `client`; set **`VITE_API_BASE_URL`** for Production (and Preview if needed); build outputs `dist/`. |
+| **Backend** | **Render**, Railway, Fly.io, VPS — run `npm run build` then `npm start` in `backend/`. |
+| **Database** | MongoDB Atlas or self-hosted MongoDB. |
 
-Checklist:
+### Frontend (Vercel) checklist
 
-- [ ] `FRONTEND_ORIGIN` = production site URL  
-- [ ] `VITE_API_BASE_URL` = production API base  
-- [ ] `GOOGLE_CALLBACK_URL` + Google Console redirect URIs updated  
-- [ ] `NODE_ENV=production`  
-- [ ] HTTPS everywhere  
+- [ ] **Root Directory:** `client` (if the repo contains both `client` and `backend`).
+- [ ] **Environment variable:** `VITE_API_BASE_URL=https://YOUR-API-HOST/api` — set for **Production** (and **Preview** if you use preview URLs).
+- [ ] **Redeploy** after changing env vars (Vite bakes them at build time).
+- [ ] **`client/vercel.json`** — SPA **rewrites** all paths to `index.html` so deep links like **`/invite/workspace/…/join`** work when opened directly or refreshed.
+
+### Backend checklist
+
+- [ ] `MONGO_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN` (optional).
+- [ ] `FRONTEND_ORIGIN` includes every browser origin that calls the API (production URL, `http://localhost:5173` for local-to-remote tests, optional `*.vercel.app` handling is implemented in code for previews — still verify in your environment).
+- [ ] `NODE_ENV=production`
+- [ ] HTTPS for the public API URL
 
 ---
 
 ## Troubleshooting
 
-| Issue | Things to check |
-|-------|------------------|
-| **CORS errors** | `FRONTEND_ORIGIN` must exactly match the browser origin (scheme + host + port). |
-| **Cookies not sent** | Axios `withCredentials: true`; API `credentials: true` in CORS; same-site / HTTPS in prod. |
-| **401 after login** | Session secret mismatch, wrong domain, or cookie blocked. |
-| **Google redirect mismatch** | `GOOGLE_CALLBACK_URL` must match Google Cloud **Authorized redirect URIs** character-for-character. |
-| **Permission errors** | Run **`npm run seed`**; confirm user’s **role** in the workspace. |
-| **Backend `npm run build`** | Current script uses `cp /package.json` — fix the path for your OS if the build fails (copy `package.json` into `dist` as intended). |
+| Issue | What to check |
+|-------|----------------|
+| **CORS / “Network Error”** | `FRONTEND_ORIGIN` must include the **exact** browser origin (scheme + host + port). Use commas for multiple origins. |
+| **Vercel 404 on refresh / invite link** | Ensure **`client/vercel.json`** is deployed and trigger a new deployment. |
+| **`VITE_API_BASE_URL` missing in production** | Set in Vercel env and **redeploy**; empty value breaks API calls. |
+| **Local: API unreachable** | Backend running? Port matches **`VITE_DEV_PROXY_TARGET`**? Try `VITE_API_BASE_URL=/api` with the Vite proxy. |
+| **401 after login** | Wrong `JWT_SECRET` between deploys, expired token, or user inactive. |
+| **Sign-in page bounces to `/`** | Fixed in current client: unauthenticated `/user/current` should not hard-redirect; use latest client code. |
+| **Permission errors** | Run **`npm run seed`**; confirm the member’s **role** in the workspace. |
 
 ---
 
@@ -385,14 +385,14 @@ Checklist:
 
 | Location | Command | Purpose |
 |----------|---------|---------|
-| `client` | `npm run dev` | Vite dev server |
+| `client` | `npm run dev` | Vite dev server (uses `.env.development` + proxy when configured). |
 | `client` | `npm run build` | Typecheck + production bundle |
 | `client` | `npm run lint` | ESLint |
 | `client` | `npm run preview` | Serve `dist` locally |
 | `backend` | `npm run dev` | API with `ts-node-dev` |
 | `backend` | `npm run seed` | Seed roles |
-| `backend` | `npm run build` | Compile TypeScript |
-| `backend` | `npm start` | Run compiled server |
+| `backend` | `npm run build` | Compile TypeScript to `dist/` |
+| `backend` | `npm start` | `node dist/index.js` |
 
 ---
 
