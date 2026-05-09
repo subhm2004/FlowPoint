@@ -1,11 +1,28 @@
 /**
- * API origin + `/api` (Express default BASE_PATH). Strips trailing slashes; appends `/api` if missing.
+ * API base for axios.
+ * - Production / direct URL: `https://host.../api` or `http://localhost:8000/api`
+ * - Local + Vite proxy: `/api` (same origin; vite.config proxies to backend)
  */
 export function normalizeApiBase(raw: string | undefined): string {
   if (raw == null || raw === "") {
     return "";
   }
-  const trimmed = raw.replace(/\/+$/, "").trim();
+  let trimmed = raw
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/\/+$/, "");
+
+  if (trimmed === "") {
+    return "";
+  }
+
+  // Same-origin path (Vite dev proxy)
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
+    if (trimmed === "/") return "/api";
+    if (trimmed.endsWith("/api")) return trimmed;
+    return `${trimmed}/api`;
+  }
+
   if (trimmed.endsWith("/api")) {
     return trimmed;
   }

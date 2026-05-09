@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import { config } from "./config/app.config";
 import connectDatabase from "./config/database.config";
 import { errorHandler } from "./middlewares/errorHandler.middleware";
@@ -20,12 +20,34 @@ app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  cors({
-    origin: config.FRONTEND_ORIGINS,
-    credentials: true,
-  })
-);
+/** Allow configured origins plus any *.vercel.app (preview deploys) and localhost (any port). */
+const VERCEL_PREVIEW = /^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.vercel\.app$/i;
+/** Vite often uses localhost; some browsers resolve to 127.0.0.1 or IPv6 [::1]. */
+const LOCALHOST =
+  /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
+
+const corsOptions: CorsOptions = {
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    if (config.FRONTEND_ORIGINS.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    if (VERCEL_PREVIEW.test(origin) || LOCALHOST.test(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(null, false);
+  },
+  /** Bearer JWT only — no cookie session; false avoids strict credentialed-CORS issues in browsers. */
+  credentials: false,
+  /** Do not narrow allowedHeaders — Axios sends Accept, etc.; omitting this lets `cors` mirror the preflight request. */
+};
+
+app.use(cors(corsOptions));
 
 app.get(`/`, (_req, res) => {
   res.status(200).json({
