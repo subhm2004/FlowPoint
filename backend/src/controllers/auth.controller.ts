@@ -1,26 +1,13 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { asyncHandler } from "../middlewares/asyncHandler.middleware";
-import { config } from "../config/app.config";
-import { registerSchema } from "../validation/auth.validation";
+import { loginSchema, registerSchema } from "../validation/auth.validation";
 import { HTTPSTATUS } from "../config/http.config";
-import { registerUserService } from "../services/auth.service";
-import passport from "passport";
-
-export const googleLoginCallback = asyncHandler(
-  async (req: Request, res: Response) => {
-    const currentWorkspace = req.user?.currentWorkspace;
-
-    if (!currentWorkspace) {
-      return res.redirect(
-        `${config.FRONTEND_GOOGLE_CALLBACK_URL}?status=failure`
-      );
-    }
-
-    return res.redirect(
-      `${config.FRONTEND_ORIGIN}/workspace/${currentWorkspace}`
-    );
-  }
-);
+import {
+  registerUserService,
+  verifyUserService,
+} from "../services/auth.service";
+import UserModel from "../models/user.model";
+import { signAccessToken } from "../utils/jwt";
 
 export const registerUserController = asyncHandler(
   async (req: Request, res: Response) => {
@@ -28,60 +15,43 @@ export const registerUserController = asyncHandler(
       ...req.body,
     });
 
-    await registerUserService(body);
+    const { userId } = await registerUserService(body);
+
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(HTTPSTATUS.INTERNAL_SERVER_ERROR).json({
+        message: "User was created but could not be loaded.",
+      });
+    }
+
+    const safeUser = user.omitPassword();
+    const token = signAccessToken(String(safeUser._id));
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "User created successfully",
+      token,
+      user: safeUser,
     });
   }
 );
 
 export const loginController = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate(
-      "local",
-      (
-        err: Error | null,
-        user: Express.User | false,
-        info: { message: string } | undefined
-      ) => {
-        if (err) {
-          return next(err);
-        }
+  async (req: Request, res: Response) => {
+    const { email, password } = loginSchema.parse(req.body);
 
-        if (!user) {
-          return res.status(HTTPSTATUS.UNAUTHORIZED).json({
-            message: info?.message || "Invalid email or password",
-          });
-        }
+    const user = await verifyUserService({ email, password });
+    const token = signAccessToken(String(user._id));
 
-        req.logIn(user, (err) => {
-          if (err) {
-            return next(err);
-          }
-
-          return res.status(HTTPSTATUS.OK).json({
-            message: "Logged in successfully",
-            user,
-          });
-        });
-      }
-    )(req, res, next);
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Logged in successfully",
+      token,
+      user,
+    });
   }
 );
 
 export const logOutController = asyncHandler(
-  async (req: Request, res: Response) => {
-    req.logout((err) => {
-      if (err) {
-        console.error("Logout error:", err);
-        return res
-          .status(HTTPSTATUS.INTERNAL_SERVER_ERROR)
-          .json({ error: "Failed to log out" });
-      }
-    });
-
-    req.session = null;
+  async (_req: Request, res: Response) => {
     return res
       .status(HTTPSTATUS.OK)
       .json({ message: "Logged out successfully" });

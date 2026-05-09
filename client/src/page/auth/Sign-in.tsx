@@ -19,9 +19,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import GoogleOauthButton from "@/components/auth/google-oauth-button";
 import { useMutation } from "@tanstack/react-query";
 import { loginMutationFn } from "@/lib/api";
+import { setAuthToken } from "@/lib/auth-token";
 import { toast } from "@/hooks/use-toast";
 import { Loader } from "lucide-react";
 
@@ -56,8 +56,8 @@ const SignIn = () => {
 
     mutate(values, {
       onSuccess: (data) => {
+        setAuthToken(data.token);
         const user = data.user;
-        console.log(user);
         const decodedUrl = returnUrl ? decodeURIComponent(returnUrl) : null;
         navigate(decodedUrl || `/workspace/${user.currentWorkspace}`);
       },
@@ -79,21 +79,13 @@ const SignIn = () => {
             <CardHeader className="text-center">
               <CardTitle className="text-xl">Welcome back</CardTitle>
               <CardDescription>
-                Login with your Email or Google account
+                Sign in with your email and password
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                   <div className="grid gap-6">
-                    <div className="flex flex-col gap-4">
-                      <GoogleOauthButton label="Login" />
-                    </div>
-                    <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
-                      <span className="relative z-10 bg-card/80 px-2 text-muted-foreground">
-                        Or continue with
-                      </span>
-                    </div>
                     <div className="grid gap-3">
                       <div className="grid gap-2">
                         <FormField

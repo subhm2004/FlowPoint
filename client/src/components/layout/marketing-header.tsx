@@ -21,8 +21,6 @@ export function MarketingHeader() {
   const isSignIn = pathname === AUTH_ROUTES.SIGN_IN;
   const isSignUp = pathname === AUTH_ROUTES.SIGN_UP;
   const isInvite = pathname.startsWith("/invite/");
-  const isGoogleOAuth = pathname === AUTH_ROUTES.GOOGLE_OAUTH_CALLBACK;
-
   if (isLanding) {
     return (
       <div className="sticky top-3 z-50 flex justify-center px-4 pb-1 md:top-4">
@@ -113,7 +111,7 @@ export function MarketingHeader() {
             </Button>
           </Link>
         )}
-        {(isInvite || isGoogleOAuth) && (
+        {isInvite && (
           <Link to="/">
             <Button variant="ghost" size="sm">
               Home

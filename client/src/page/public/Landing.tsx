@@ -282,7 +282,7 @@ const faqs = [
   {
     question: "How does collaboration work?",
     answer:
-      "Team members share a workspace, see projects and tasks, and update status in real time with session-based access.",
+      "Team members share a workspace, see projects and tasks, and update status in real time with role-based access.",
   },
   {
     question: "Can multiple people work on tasks at the same time?",
@@ -307,7 +307,7 @@ const faqs = [
   {
     question: "Is my data secure?",
     answer:
-      "Sessions use secure cookies; store credentials safely and use HTTPS in production for end-to-end protection.",
+      "Use HTTPS in production. After sign-in, API access uses a short-lived token; keep your password private.",
   },
   {
     question: "Who is FlowPilot best for?",
@@ -315,9 +315,9 @@ const faqs = [
       "Agencies, startups, and product teams that want a simple, powerful alternative to scattered docs and chat threads.",
   },
   {
-    question: "Does FlowPilot support Google sign-in?",
+    question: "How do I sign in?",
     answer:
-      "Google OAuth can be enabled when you configure client credentials in your environment.",
+      "Create an account with email and password, or sign in with the same credentials. Each new account gets its own workspace.",
   },
 ];
 

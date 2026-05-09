@@ -1,13 +1,10 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import session from "cookie-session";
 import { config } from "./config/app.config";
 import connectDatabase from "./config/database.config";
 import { errorHandler } from "./middlewares/errorHandler.middleware";
 
-import "./config/passport.config";
-import passport from "passport";
 import authRoutes from "./routes/auth.route";
 import userRoutes from "./routes/user.route";
 import isAuthenticated from "./middlewares/isAuthenticated.middleware";
@@ -22,20 +19,6 @@ const BASE_PATH = config.BASE_PATH;
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
-
-app.use(
-  session({
-    name: "session",
-    keys: [config.SESSION_SECRET],
-    maxAge: 24 * 60 * 60 * 1000,
-    secure: config.NODE_ENV === "production",
-    httpOnly: true,
-    sameSite: "lax",
-  })
-);
-
-app.use(passport.initialize());
-app.use(passport.session());
 
 app.use(
   cors({
@@ -63,9 +46,5 @@ app.use(errorHandler);
 
 app.listen(config.PORT, async () => {
   console.log(`Server listening on port ${config.PORT} in ${config.NODE_ENV}`);
-  console.log(
-    "[Google OAuth] GOOGLE_CALLBACK_URL (must match Google Console → Authorized redirect URIs exactly):",
-    config.GOOGLE_CALLBACK_URL
-  );
   await connectDatabase();
 });

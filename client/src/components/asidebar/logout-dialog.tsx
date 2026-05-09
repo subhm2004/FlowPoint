@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logoutMutationFn } from "@/lib/api";
+import { clearAuthToken } from "@/lib/auth-token";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Loader } from "lucide-react";
@@ -26,6 +27,7 @@ const LogoutDialog = (props: {
   const { mutate, isPending } = useMutation({
     mutationFn: logoutMutationFn,
     onSuccess: () => {
+      clearAuthToken();
       queryClient.resetQueries({
         queryKey: ["authUser"],
       });
