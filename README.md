@@ -1,14 +1,22 @@
 # FlowPilot
 
-[![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![MongoDB Atlas](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas/database)
-[![Deploy — Render](https://img.shields.io/badge/Deploy-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
-[![Deploy — Vercel](https://img.shields.io/badge/Deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+> **Workspace-first project delivery**
 
-**FlowPilot** is a full-stack **workspace-first project and task management** application. Teams organize work in **workspaces**, break it into **projects** and **tasks**, assign ownership, track **status** and **priority**, and enforce **role-based access** so owners, admins, and members only perform actions they are allowed to.
+### Build faster with FlowPilot
 
-This repository is a **monorepo-style** layout: a **React (Vite)** client and an **Express** API, sharing a **MongoDB** database via **Mongoose**.
+One command center for **workspaces**, **projects**, and **tasks** — so your team always knows what ships next, who owns it, and how delivery is trending.
+
+Behind the landing page: a full-stack app where teams organize work, assign ownership, track **status** and **priority**, and use **role-based access** (`OWNER` / `ADMIN` / `MEMBER`) enforced on the server.
+
+**Repo layout:** **React (Vite)** frontend + **Express** API + **MongoDB** (Mongoose), monorepo-style (`client/` · `backend/`).
+
+<p align="left">
+  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://www.mongodb.com/atlas/database"><img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB Atlas" /></a>
+  <a href="https://render.com/"><img src="https://img.shields.io/badge/Deploy-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Deploy on Render" /></a>
+  <a href="https://vercel.com/"><img src="https://img.shields.io/badge/Deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Deploy on Vercel" /></a>
+</p>
 
 ---
 

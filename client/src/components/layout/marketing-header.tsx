@@ -25,10 +25,10 @@ export function MarketingHeader() {
 
   if (isLanding) {
     return (
-      <div className="sticky top-3 z-50 flex justify-center px-4 pb-1.5 md:top-4">
+      <div className="sticky top-3 z-50 flex justify-center px-4 pb-1 md:top-4">
         <header
           className={cn(
-            "flex w-full max-w-6xl items-center justify-between gap-3 rounded-full border border-black/[0.06] bg-white/90 px-4 py-2.5 shadow-sm backdrop-blur-xl",
+            "flex w-full max-w-7xl items-center justify-between gap-3 rounded-full border border-black/[0.06] bg-white/90 px-4 py-2.5 shadow-sm backdrop-blur-xl",
             "dark:border-white/[0.08] dark:bg-zinc-950/85 dark:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.5)]",
             "md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-4 md:px-6"
           )}

@@ -143,7 +143,7 @@ function HeroProductPreview() {
   };
 
   return (
-    <div className="animate-hero-float relative mx-auto w-full max-w-lg lg:mx-0">
+    <div className="animate-hero-float relative mx-auto w-full max-w-md sm:max-w-lg lg:mx-0 lg:max-w-none">
       <div
         className="pointer-events-none absolute -inset-8 rounded-[2.5rem] bg-gradient-to-tr from-violet-500/25 via-fuchsia-500/10 to-cyan-500/20 opacity-90 blur-3xl dark:from-violet-500/20 dark:via-fuchsia-500/5 dark:to-cyan-500/15"
         aria-hidden
@@ -337,120 +337,126 @@ const Landing = () => {
 
   return (
     <div className="text-foreground">
-      <main className="mx-auto w-full max-w-7xl px-5 pb-10 pt-1 md:px-8 md:pb-20 lg:px-10">
+      <main className="mx-auto w-full max-w-7xl px-4 pb-8 pt-2 sm:pt-3 md:px-6 md:pb-16 lg:px-8">
         {/* Hero — split layout + product preview */}
-        <section className="relative overflow-hidden px-1 pt-2 md:pt-6 lg:pt-8">
+        <section className="relative overflow-hidden px-0 pt-4 sm:pt-6 md:pt-8 lg:pt-10">
           <div
-            className="pointer-events-none absolute left-1/2 top-0 h-[28rem] w-[min(100%,56rem)] -translate-x-1/2 rounded-full bg-gradient-to-b from-violet-500/12 via-fuchsia-500/5 to-transparent blur-3xl dark:from-violet-500/10 dark:via-transparent"
+            className="pointer-events-none absolute left-1/2 top-0 h-[18rem] w-[min(100%,52rem)] -translate-x-1/2 rounded-full bg-gradient-to-b from-violet-500/12 via-fuchsia-500/5 to-transparent blur-3xl dark:from-violet-500/10 dark:via-transparent md:h-[22rem]"
             aria-hidden
           />
-          <div className="relative mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1fr_1.02fr] lg:items-center lg:gap-14 xl:gap-16">
-            <div className="relative px-3 sm:px-6 lg:px-2">
-              <div
-                className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-4 py-1.5 text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm dark:bg-zinc-900/80"
-                style={{ animationDelay: "0s" }}
-              >
-                <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
-                <span>Workspace-first project delivery</span>
-              </div>
+          <div className="relative mx-auto w-full max-w-7xl">
+            <div className="grid w-full gap-8 sm:gap-10 lg:grid-cols-2 lg:items-start lg:gap-x-10 lg:gap-y-4 xl:gap-x-14">
+              <div className="relative flex min-w-0 flex-col items-stretch px-1 text-left sm:px-3 lg:px-0">
+                <div
+                  className="animate-fade-up inline-flex h-8 w-fit shrink-0 items-center justify-center gap-2 rounded-full border border-border/70 bg-background/90 px-3.5 text-[13px] font-semibold leading-none tracking-tight text-foreground shadow-sm backdrop-blur-sm dark:bg-zinc-900/85 sm:h-9 sm:gap-2 sm:px-4 sm:text-sm"
+                  style={{ animationDelay: "0s" }}
+                >
+                  <Sparkles
+                    className="size-3.5 shrink-0 text-violet-600 dark:text-violet-400 sm:size-4"
+                    aria-hidden
+                  />
+                  <span className="leading-none">Workspace-first project delivery</span>
+                </div>
 
-              <h1
-                className="animate-fade-up mt-6 text-[2.35rem] font-extrabold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl md:leading-[1.05] lg:text-[3.25rem] xl:text-[3.5rem]"
-                style={{ animationDelay: "0.05s" }}
-              >
-                <span className="block text-balance">
-                  Build faster
-                  <br />
-                  <span className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-600 bg-clip-text text-transparent dark:from-violet-400 dark:via-fuchsia-400 dark:to-cyan-400">
+                <h1
+                  className="animate-fade-up mt-3 space-y-0.5 text-[2.25rem] font-extrabold leading-[1.12] tracking-tight text-foreground sm:mt-4 sm:text-5xl sm:leading-[1.1] md:text-6xl md:leading-[1.06] lg:mt-4 lg:text-[3.15rem] lg:leading-[1.08] xl:text-[3.45rem]"
+                  style={{ animationDelay: "0.05s" }}
+                >
+                  <span className="block text-pretty">Build faster</span>
+                  <span className="block bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-600 bg-clip-text text-pretty text-transparent dark:from-violet-400 dark:via-fuchsia-400 dark:to-cyan-400">
                     with FlowPilot
                   </span>
-                </span>
-              </h1>
+                </h1>
 
-              <p
-                className="animate-fade-up mt-5 max-w-xl text-base font-medium leading-relaxed text-muted-foreground md:mt-6 md:text-lg"
-                style={{ animationDelay: "0.1s" }}
-              >
-                One command center for workspaces, projects, and tasks — so your team always knows what ships
-                next, who owns it, and how delivery is trending.
-              </p>
+                <p
+                  className="animate-fade-up mt-3 max-w-xl text-[15px] font-medium leading-snug text-muted-foreground sm:mt-3.5 sm:max-w-2xl sm:text-base md:mt-4 md:text-lg md:leading-relaxed lg:max-w-[40rem]"
+                  style={{ animationDelay: "0.1s" }}
+                >
+                  One command center for workspaces, projects, and tasks — so your team always knows what ships
+                  next, who owns it, and how delivery is trending.
+                </p>
 
-              <div
-                className="animate-fade-up mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center"
-                style={{ animationDelay: "0.15s" }}
-              >
-                <Link to="/sign-up" className="inline-flex">
-                  <Button
-                    size="lg"
-                    className={cn(
-                      "h-12 w-full rounded-2xl border-0 px-8 text-[15px] font-bold sm:w-auto sm:min-w-[10rem] md:h-14 md:px-10 md:text-base",
-                      "bg-foreground text-background shadow-md",
-                      "transition-all duration-200 hover:bg-foreground/90 hover:shadow-lg active:scale-[0.98]",
-                      "group"
-                    )}
-                  >
-                    Get started free
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </Button>
-                </Link>
-                <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
-                  <a
-                    href="#how-it-works"
-                    className="inline-flex w-full sm:w-auto"
-                  >
+                <div
+                  className="animate-fade-up mt-5 flex w-full flex-col gap-2.5 sm:mt-6 sm:max-w-2xl sm:flex-row sm:flex-wrap sm:items-stretch sm:gap-3 lg:max-w-none"
+                  style={{ animationDelay: "0.15s" }}
+                >
+                  <Link to="/sign-up" className="inline-flex sm:shrink-0">
                     <Button
                       size="lg"
-                      variant="outline"
                       className={cn(
-                        "h-12 w-full rounded-2xl border-border/80 bg-background/80 px-8 text-[15px] font-semibold shadow-sm backdrop-blur-sm md:h-14",
-                        "hover:bg-muted/80 dark:bg-zinc-900/60 dark:hover:bg-zinc-800/80"
+                        "h-12 w-full rounded-2xl border-0 px-7 text-[15px] font-bold sm:w-auto sm:min-w-[11rem] md:h-14 md:px-9 md:text-base",
+                        "bg-foreground text-background shadow-md",
+                        "transition-all duration-200 hover:bg-foreground/90 hover:shadow-lg active:scale-[0.98]",
+                        "group"
                       )}
                     >
-                      How it works
+                      Get started free
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Button>
-                  </a>
-                  <a
-                    href="https://github.com/subhm2004/FlowPoint"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex w-full sm:w-auto"
-                  >
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className={cn(
-                        "h-12 w-full rounded-2xl border border-black/12 bg-white px-8 text-[15px] font-semibold gap-2 shadow-sm md:h-14",
-                        "transition-all duration-200 hover:bg-neutral-50 hover:shadow-md active:scale-[0.98]",
-                        "dark:border-white/12 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                      )}
+                  </Link>
+                  <div className="flex w-full flex-col gap-3 sm:w-auto sm:min-w-0 sm:flex-1 sm:flex-row sm:gap-3">
+                    <a href="#how-it-works" className="inline-flex min-w-0 flex-1 sm:flex-initial">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className={cn(
+                          "h-12 w-full rounded-2xl border-border/80 bg-background/90 px-7 text-[15px] font-semibold shadow-sm backdrop-blur-sm md:h-14 md:px-8",
+                          "hover:bg-muted/80 dark:bg-zinc-900/70 dark:hover:bg-zinc-800/85"
+                        )}
+                      >
+                        How it works
+                      </Button>
+                    </a>
+                    <a
+                      href="https://github.com/subhm2004/FlowPoint"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-w-0 flex-1 sm:flex-initial"
                     >
-                      <Github className="h-[1.1rem] w-[1.1rem] md:h-5 md:w-5" />
-                      Star on GitHub
-                    </Button>
-                  </a>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className={cn(
+                          "h-12 w-full rounded-2xl border border-black/12 bg-white px-7 text-[15px] font-semibold gap-2 shadow-sm md:h-14 md:px-8",
+                          "transition-all duration-200 hover:bg-neutral-50 hover:shadow-md active:scale-[0.98]",
+                          "dark:border-white/12 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                        )}
+                      >
+                        <Github className="h-[1.1rem] w-[1.1rem] shrink-0 md:h-5 md:w-5" />
+                        Star on GitHub
+                      </Button>
+                    </a>
+                  </div>
                 </div>
               </div>
 
+              {/* Preview: offset down on large screens to align with headline (not the badge) */}
               <div
-                className="animate-fade-up mt-10 grid grid-cols-2 gap-4 border-t border-border/60 pt-8 sm:grid-cols-4 md:mt-11 md:gap-6"
-                style={{ animationDelay: "0.2s" }}
+                className={cn(
+                  "relative min-w-0 w-full lg:pl-2 xl:pl-4",
+                  "pt-2 sm:pt-0",
+                  "lg:pt-[3.25rem] xl:pt-[3.5rem]"
+                )}
               >
-                {[
-                  { k: "100+", v: "Teams onboarded" },
-                  { k: "One", v: "Source of truth" },
-                  { k: "Roles", v: "Built-in permissions" },
-                  { k: "Zero", v: "Install required" },
-                ].map((s) => (
-                  <div key={s.v} className="text-left">
-                    <p className="text-xl font-extrabold tracking-tight text-foreground md:text-2xl">{s.k}</p>
-                    <p className="mt-1 text-xs font-medium text-muted-foreground md:text-sm">{s.v}</p>
-                  </div>
-                ))}
+                <HeroProductPreview />
               </div>
             </div>
 
-            <div className="relative px-2 sm:px-4 lg:px-0">
-              <HeroProductPreview />
+            <div
+              className="animate-fade-up mt-6 grid w-full grid-cols-2 gap-x-4 gap-y-3 border-t border-border/60 px-1 pt-4 sm:mt-7 sm:gap-x-6 sm:px-3 sm:pt-5 lg:mt-6 lg:grid-cols-4 lg:px-0"
+              style={{ animationDelay: "0.2s" }}
+            >
+              {[
+                { k: "100+", v: "Teams onboarded" },
+                { k: "One", v: "Source of truth" },
+                { k: "Roles", v: "Built-in permissions" },
+                { k: "Zero", v: "Install required" },
+              ].map((s) => (
+                <div key={s.v} className="min-w-0 text-left">
+                  <p className="text-xl font-extrabold tracking-tight text-foreground md:text-2xl">{s.k}</p>
+                  <p className="mt-0.5 text-xs font-medium text-muted-foreground md:text-sm">{s.v}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -458,7 +464,7 @@ const Landing = () => {
         {/* Features — theme-aware cards (light / dark) */}
         <section
           id="features"
-          className="landing-features-glow relative mt-14 scroll-mt-28 rounded-3xl border border-border/40 py-12 shadow-sm md:mt-16 md:py-16"
+          className="landing-features-glow relative mt-8 scroll-mt-28 rounded-3xl border border-border/40 py-10 shadow-sm md:mt-10 md:py-14"
         >
           <div className="text-center">
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-400">
