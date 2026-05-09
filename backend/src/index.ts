@@ -22,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   cors({
-    origin: config.FRONTEND_ORIGIN,
+    origin: config.FRONTEND_ORIGINS,
     credentials: true,
   })
 );

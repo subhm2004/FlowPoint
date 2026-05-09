@@ -1,9 +1,10 @@
 import { CustomError } from "@/types/custom-error.type";
 import axios from "axios";
 import type { AxiosError } from "axios";
+import { normalizeApiBase } from "./base-url";
 import { clearAuthToken, getAuthToken } from "./auth-token";
 
-const baseURL = import.meta.env.VITE_API_BASE_URL;
+const baseURL = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
 
 const options = {
   baseURL,

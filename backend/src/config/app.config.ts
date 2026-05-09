@@ -1,5 +1,11 @@
 import { getEnv } from "../utils/get-env";
 
+const parseOrigins = (raw: string) =>
+  raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 const appConfig = () => ({
   NODE_ENV: getEnv("NODE_ENV", "development"),
   PORT: getEnv("PORT", "5000"),
@@ -9,7 +15,10 @@ const appConfig = () => ({
   JWT_SECRET: getEnv("JWT_SECRET"),
   JWT_EXPIRES_IN: getEnv("JWT_EXPIRES_IN", "7d"),
 
-  FRONTEND_ORIGIN: getEnv("FRONTEND_ORIGIN", "localhost"),
+  /** Comma-separated allowed browser origins for CORS (e.g. Vercel URL + http://localhost:5173 for local dev). */
+  FRONTEND_ORIGINS: parseOrigins(
+    getEnv("FRONTEND_ORIGIN", "http://localhost:5173")
+  ),
 });
 
 export const config = appConfig();
