@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets (keep *.env.example tracked)
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Client (Vite)
+client/dist/
+client/dist-ssr/
+
+# Backend
+backend/dist/
+
+# Logs & debug
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Caches
+.cache/
+.parcel-cache/
+.eslintcache
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Misc (project-specific)
+data.txt
