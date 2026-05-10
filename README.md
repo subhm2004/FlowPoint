@@ -1,400 +1,549 @@
+<div align="center">
+
 # FlowPilot
 
-> **Workspace-first project delivery**
+<img src="https://readme-typing-svg.demolab.com?font=DM+Sans&weight=600&size=24&duration=3000&pause=1200&color=10B981&center=true&vCenter=true&multiline=true&width=700&height=70&lines=Workspace%E2%80%91first+task+%26+project+management;Ship+faster+with+teams+%E2%80%94+roles%2C+analytics%2C+clarity" alt="FlowPilot animated tagline" />
 
-### Build faster with FlowPilot
+<br/>
 
-One command center for **workspaces**, **projects**, and **tasks** — so your team always knows what ships next, who owns it, and how delivery is trending.
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Express](https://img.shields.io/badge/Express-4-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=flat-square&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
-Behind the landing page: a full-stack app where teams organize work, assign ownership, track **status** and **priority**, and use **role-based access** (`OWNER` / `ADMIN` / `MEMBER`) enforced on the server.
+<img src="https://readme-typing-svg.demolab.com?font=DM+Sans&weight=500&size=14&duration=4000&pause=2000&color=6B7280&center=true&vCenter=true&width=520&lines=React+%E2%80%A2+Express+%E2%80%A2+JWT+%E2%80%A2+MongoDB+%E2%80%A2+RBAC" alt="Tech stack line" />
 
-**Repo layout:** **React (Vite)** frontend + **Express** API + **MongoDB** (Mongoose), monorepo-style (`client/` · `backend/`).
+<br/>
 
-<p align="left">
-  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" /></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
-  <a href="https://www.mongodb.com/atlas/database"><img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB Atlas" /></a>
-  <a href="https://render.com/"><img src="https://img.shields.io/badge/Deploy-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Deploy on Render" /></a>
-  <a href="https://vercel.com/"><img src="https://img.shields.io/badge/Deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Deploy on Vercel" /></a>
-</p>
+**[Features](#features)** · **[Architecture](#architecture)** · **[Quick start](#quick-start)** · **[Environment](#environment-variables)** · **[API](#api-overview)** · **[Deploy](#deployment)**
+
+</div>
 
 ---
 
 ## Table of contents
 
-- [Why FlowPilot](#why-flowpilot)
-- [Architecture](#architecture)
-- [Tech stack](#tech-stack)
-- [Features (detailed)](#features-detailed)
-- [Data model](#data-model)
-- [Frontend structure & routes](#frontend-structure--routes)
-- [Backend structure & API](#backend-structure--api)
-- [Environment variables](#environment-variables)
-- [Getting started](#getting-started)
-- [Local development (recommended)](#local-development-recommended)
-- [Database seeding](#database-seeding)
-- [Authentication (JWT)](#authentication-jwt)
-- [Security notes](#security-notes)
-- [Deployment](#deployment)
-- [Troubleshooting](#troubleshooting)
-- [Scripts reference](#scripts-reference)
+1. [Overview](#overview)
+2. [Features](#features)
+3. [Project structure](#project-structure)
+4. [Architecture](#architecture)
+   - [System context](#system-context)
+   - [Containers and deployment view](#containers-and-deployment-view)
+   - [Backend request pipeline](#backend-request-pipeline)
+   - [Authentication sequence (JWT)](#authentication-sequence-jwt)
+   - [Domain model (ER-style)](#domain-model-data-layer)
+   - [Frontend architecture](#frontend-architecture)
+5. [Quick start](#quick-start)
+6. [Local development (Vite proxy)](#local-development-vite-proxy)
+7. [Frontend routes](#frontend-routes)
+8. [API overview](#api-overview)
+9. [RBAC reference](#rbac-role-based-access-control)
+10. [Environment variables](#environment-variables)
+11. [JWT authentication recap](#jwt-authentication-recap)
+12. [Deployment](#deployment)
+13. [Troubleshooting](#troubleshooting)
+14. [Scripts](#scripts)
+15. [Security notes](#security-notes)
+16. [License](#license)
 
 ---
 
-## Why FlowPilot
+## Overview
 
-- **Single source of truth** for what the team is building: workspaces → projects → tasks.
-- **Clear accountability** via assignees, due dates, and status columns.
-- **Governance without friction**: permissions are explicit (`OWNER` / `ADMIN` / `MEMBER`) and checked on the server.
-- **Modern UX**: responsive UI with light/dark theme, dashboards with analytics (including **overdue** counts), and a marketing **landing** page.
+**FlowPilot** is a **full-stack** monorepo for teams that want a single place to manage **workspaces**, **projects**, and **tasks** with **role-based access control** enforced on the server.
+
+| Layer | Location | Stack |
+|--------|-----------|--------|
+| **SPA** | `client/` | React 18, Vite 6, TypeScript, Tailwind CSS, Radix UI, TanStack Query, React Router 7, Axios |
+| **API** | `backend/` | Express 4, TypeScript, `jsonwebtoken`, bcrypt, Zod, Mongoose 8 |
+| **Data** | MongoDB | Documents for users, workspaces, members, roles, projects, tasks |
+
+**Product flow:** a new user **registers** → API creates **User**, **Account** (email provider), default **Workspace**, **Member** row with **OWNER** **Role**, and sets `user.currentWorkspace`. Subsequent API calls carry a **JWT** until logout or expiry.
+
+---
+
+## Features
+
+| Area | What you get |
+|------|----------------|
+| **Auth** | Email/password **register** & **login**; API returns **JWT** + user; client stores token and sends `Authorization: Bearer …` |
+| **Workspaces** | CRUD (per permissions), settings, **analytics** (counts, overdue tasks) |
+| **Projects** | Workspace-scoped projects; create / update / delete with RBAC |
+| **Tasks** | Status, priority, assignee, due date, filters, tables, auto **taskCode** |
+| **Members** | Invite via **`/invite/workspace/:inviteCode/join`**; join API for logged-in users |
+| **RBAC** | `OWNER` · `ADMIN` · `MEMBER` — permissions in code + seeded **Role** documents |
+| **UX** | Light/dark theme, responsive layout, marketing **landing**, toasts, polished invite screen |
+
+---
+
+## Project structure
+
+```
+Task_Managemet/
+├── client/
+│   ├── public/                 # Static assets (e.g. logo)
+│   ├── src/
+│   │   ├── components/         # UI primitives, workspace UI, forms, ui/ (shadcn-style)
+│   │   ├── page/               # Route-level screens (auth, workspace, landing, invite)
+│   │   ├── routes/             # BrowserRouter, AuthRoute, ProtectedRoute, path maps
+│   │   ├── lib/                # axios-client, auth-token, base-url, api.ts mutations/queries
+│   │   ├── hooks/              # useAuth, workspace queries, etc.
+│   │   ├── context/            # AuthProvider (user + workspace context)
+│   │   ├── types/, constant/
+│   │   └── main.tsx, App.tsx
+│   ├── .env.development        # Dev: VITE_API_BASE_URL=/api + proxy
+│   ├── vercel.json             # SPA fallback → index.html (deep links on Vercel)
+│   ├── vite.config.ts          # Proxy /api → backend
+│   └── package.json
+│
+├── backend/
+│   ├── src/
+│   │   ├── config/             # app.config (env), database
+│   │   ├── controllers/        # Thin HTTP handlers
+│   │   ├── middlewares/        # isAuthenticated (JWT), errorHandler, asyncHandler, roleGuard
+│   │   ├── models/             # Mongoose schemas (User, Workspace, Task, …)
+│   │   ├── routes/             # Mount routers under BASE_PATH
+│   │   ├── services/           # Business logic & transactions
+│   │   ├── validation/         # Zod schemas
+│   │   ├── utils/              # jwt, bcrypt helpers, AppError
+│   │   ├── enums/
+│   │   ├── seeders/
+│   │   └── index.ts            # Express app entry
+│   ├── dist/                   # tsc output (production)
+│   └── .env.example
+│
+└── README.md
+```
 
 ---
 
 ## Architecture
 
+This section describes **how pieces connect**, **how a request flows**, and **how auth works** end-to-end.
+
+### System context
+
+High-level stack: **React client** → **Express API** (`REST JSON` entry) → **MongoDB** via **Mongoose**. JWT lives in the browser; protected calls send the **Bearer** token.
+
 ```mermaid
 flowchart LR
-  subgraph client [React Client]
-    UI[Vite + React + TS]
-    Store[JWT in localStorage]
+  subgraph RC["React Client"]
+    UI["Vite + React + TS"]
+    LS[("JWT in localStorage")]
   end
-  subgraph api [Express API]
-    REST[REST JSON]
-    JWT[JWT verify middleware]
-    Val[Zod Validation]
+  subgraph API["Express API"]
+    REST["REST JSON"]
+    JWTMW["JWT verify middleware"]
+    ZOD["Zod Validation"]
   end
-  subgraph db [MongoDB]
-    Mongo[(Mongoose)]
+  subgraph DB["MongoDB"]
+    M[("Mongoose")]
   end
-  UI -->|HTTPS + Bearer JWT| REST
-  Store -.->|Authorization header| REST
-  REST --> JWT
-  REST --> Val
-  REST --> Mongo
+
+  UI -->|"HTTPS + Bearer JWT"| REST
+  LS -.->|"Authorization header"| REST
+  REST --> JWTMW
+  REST --> ZOD
+  REST --> M
 ```
 
-- The **browser** calls the API over HTTP(S). After login or register, the API returns a **JWT**; the client stores it (e.g. `localStorage`) and sends `Authorization: Bearer <token>` on protected routes.
-- **CORS** allows only configured **origins** (see `FRONTEND_ORIGIN`). Multiple origins are supported as a **comma-separated** list (e.g. production URL + `http://localhost:5173`).
-- **No session cookies** are required for API auth; `credentials` mode is off for simpler cross-origin behavior with JWT.
+- **Authentication flow:** The **browser** calls the API over HTTP(S). After **login** or **register**, the API returns a **JWT**; the client stores it (e.g. `localStorage`) and sends `Authorization: Bearer <token>` on protected routes.
+- **CORS:** **CORS** allows only configured **origins** (see `FRONTEND_ORIGIN`). Multiple origins are supported as a **comma-separated** list (e.g. production URL + `http://localhost:5173`). Preview hosts like `*.vercel.app` and local dev URLs are also handled in API code where configured.
+- **Sessions:** **No session cookies** are required for API auth; **`credentials`** mode is **off** on the client for simpler cross-origin behavior with JWT.
+
+The **SPA** never talks to **MongoDB** directly — all persistence goes through **REST** under `BASE_PATH` (default `/api`).
+
+### Containers and deployment view
+
+Typical production split (you can swap hosts freely):
+
+```mermaid
+flowchart LR
+  U[Users]
+  V[Vercel / CDN\nStatic SPA]
+  R[Render / VPS\nExpress API]
+  A[(MongoDB Atlas)]
+  U --> V
+  U --> R
+  R --> A
+  V -.->|VITE_API_BASE_URL| R
+```
+
+| Container | Responsibility |
+|-----------|----------------|
+| **Static host** | Serves `client/dist`, **rewrites** unknown paths to `index.html` so React Router works on refresh. |
+| **API host** | Runs `node dist/index.js`, holds secrets (`JWT_SECRET`, `MONGO_URI`). |
+| **MongoDB** | Source of truth for users, workspaces, tasks, roles. |
+
+### Backend request pipeline
+
+Every HTTP request passes through a **pipeline**:
+
+```mermaid
+flowchart LR
+  A[Incoming request] --> B[cors]
+  B --> C[express.json]
+  C --> D[Route matcher]
+  D --> E{Protected?}
+  E -->|Yes| F[isAuthenticated\nverify JWT]
+  E -->|No| G[Controller]
+  F --> H{roleGuard?}
+  H -->|Yes| I[roleGuard]
+  H -->|No| G
+  I --> G
+  G --> J[Service / Mongoose]
+  J --> K[JSON response]
+  F -->|Invalid JWT| L[401]
+```
+
+**Logical layers** (not separate npm packages, but clear separation in `backend/src/`):
+
+| Layer | Folder(s) | Role |
+|--------|-----------|------|
+| **Transport** | `routes/`, `index.ts` | HTTP paths, method, mount `BASE_PATH` |
+| **Application** | `controllers/`, `validation/` | Parse body/params with Zod, call services, map to status codes |
+| **Domain / use cases** | `services/` | Transactions, rules (e.g. “only OWNER deletes workspace”) |
+| **Infrastructure** | `models/`, `config/` | Mongoose, env, DB connection |
+| **Cross-cutting** | `middlewares/`, `utils/appError.ts` | Auth, errors, async wrapper |
+
+**Error handling:** thrown `AppError` subclasses and Zod errors are normalized by **`errorHandler`** middleware into consistent JSON `{ message, errorCode? }`.
+
+### Authentication sequence (JWT)
+
+**Login** (same idea for **register**, which also returns a token):
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as Browser
+  participant A as Express
+  participant S as Auth service
+  participant D as MongoDB
+
+  B->>A: POST /api/auth/login { email, password }
+  A->>S: verifyUserService
+  S->>D: find Account + User, compare bcrypt
+  D-->>S: user document
+  S-->>A: safe user (no password)
+  A->>A: sign JWT (sub = userId)
+  A-->>B: 200 { token, user }
+
+  Note over B: Client stores token (e.g. localStorage)
+
+  B->>A: GET /api/user/current + Authorization Bearer
+  A->>A: verify JWT → userId
+  A->>D: User.findById
+  D-->>A: user
+  A-->>B: 200 { user }
+```
+
+**Token invalid / expired:** API responds **401**; client may clear storage and send the user to the landing or sign-in page. Sign-in and sign-up routes **do not** prefetch `/user/current` for guests, avoiding redirect loops.
+
+### Domain model (data layer)
+
+Simplified entity relationships (Mongoose `ref` where used):
+
+```mermaid
+erDiagram
+  USER ||--o{ MEMBER : "member of"
+  WORKSPACE ||--o{ MEMBER : "has"
+  USER }o--|| WORKSPACE : "currentWorkspace"
+  WORKSPACE ||--o{ PROJECT : "contains"
+  WORKSPACE ||--o{ TASK : "scopes"
+  PROJECT ||--o{ TASK : "groups"
+  ROLE ||--o{ MEMBER : "assigned"
+  USER ||--o{ ACCOUNT : "has"
+
+  USER {
+    ObjectId _id
+    string email
+    string name
+    string password_hash
+    ObjectId currentWorkspace
+  }
+
+  WORKSPACE {
+    ObjectId _id
+    string name
+    string inviteCode
+    ObjectId owner
+  }
+
+  MEMBER {
+    ObjectId userId
+    ObjectId workspaceId
+    ObjectId role
+  }
+
+  TASK {
+    ObjectId projectId
+    ObjectId workspace
+    string status
+    string priority
+    ObjectId assignedTo
+  }
+```
+
+Exact fields: see `backend/src/models/*.ts`.
+
+### Frontend architecture
+
+```mermaid
+flowchart TB
+  subgraph SPA["React SPA"]
+    R[React Router\nAuthRoute / ProtectedRoute]
+    P[Pages]
+    Q[TanStack Query\nqueryKey authUser, workspaces…]
+    X[Axios instance\nbaseURL + interceptors]
+    T[localStorage\nauth token]
+  end
+  R --> P
+  P --> Q
+  Q --> X
+  T -.-> X
+  X --> API[HTTP /api/*]
+```
+
+| Concern | Implementation |
+|---------|----------------|
+| **Routing** | `AuthRoute` — if logged in, redirect to workspace; else show marketing + auth pages. `ProtectedRoute` — requires user from `useAuth`. |
+| **Server state** | TanStack Query: `useAuth`, workspace/project/task queries, mutations with `queryClient` invalidation. |
+| **API base URL** | `normalizeApiBase`: production full URL with `/api`; dev often **`/api`** + Vite **proxy** to Express. |
+| **Auth header** | Request interceptor reads token from **`auth-token.ts`** helpers. |
+
+<details>
+<summary><strong>Expand: Dev vs prod networking</strong></summary>
+
+| Mode | Browser calls | CORS |
+|------|---------------|------|
+| **Dev (recommended)** | `http://localhost:5173/api/...` → Vite proxies to `127.0.0.1:8000` | Same origin to Vite → no browser CORS for API |
+| **Prod** | `https://your-spa.com` loads JS that calls `https://api.example.com/api/...` | API must allow SPA origin via `FRONTEND_ORIGIN` |
+
+</details>
 
 ---
 
-## Tech stack
-
-| Layer | Technology |
-|--------|------------|
-| **UI** | React 18, TypeScript, Vite 6 |
-| **Styling** | Tailwind CSS, Radix UI primitives, shadcn-style components, Lucide icons |
-| **State & data** | TanStack Query, Zustand, React Router 7 |
-| **Forms** | React Hook Form + Zod resolvers |
-| **Tables / URL state** | TanStack Table, nuqs |
-| **API client** | Axios (`VITE_API_BASE_URL` or same-origin `/api` via dev proxy) |
-| **Server** | Express 4, TypeScript |
-| **Database** | MongoDB with Mongoose 8 |
-| **Auth** | Email/password + **JWT** (jsonwebtoken), bcrypt |
-| **Validation** | Zod (controllers) |
-
----
-
-## Features (detailed)
-
-### Authentication
-
-- **Register** — `POST /api/auth/register` creates user, default workspace, and member role; returns **`token`** + **`user`** (password never returned).
-- **Login** — `POST /api/auth/login` verifies email/password; returns **`token`** + **`user`**.
-- **Logout** — `POST /api/auth/logout` is a no-op on the server (client clears stored JWT).
-- **Current user** — `GET /api/user/current` requires a valid **Bearer** token.
-- The Axios client attaches the token from storage; **401** with a stale token clears storage and can redirect home (sign-in/sign-up and unauthenticated checks do not trigger a hard redirect loop).
-
-### Workspaces
-
-- Top-level **tenant** for a team: branding, settings, and membership.
-- **CRUD** operations are permission-gated (e.g. only **OWNER** can delete a workspace).
-- **Analytics** endpoints power dashboard cards (totals, **overdue** tasks, etc.).
-
-### Members & invitations
-
-- Users join a workspace as **members** with a **role** (`OWNER`, `ADMIN`, `MEMBER`).
-- **Invite** flow via shareable URLs: **`/invite/workspace/:inviteCode/join`** (deep links require SPA hosting rewrites — see [Deployment](#deployment)).
-- **Admins** can add members and remove members; **only OWNER** can change another member’s role.
-
-### Projects
-
-- **Projects** are scoped to a workspace and group related tasks.
-- Create, update, delete according to **RBAC**.
-
-### Tasks
-
-- **Tasks** reference both a **project** and a **workspace**.
-- **Status**: `BACKLOG`, `TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`.
-- **Priority**: `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
-- **Assignment**: optional `assignedTo`; **dueDate** supports overdue logic in analytics.
-- **taskCode**: auto-generated readable identifier.
-
-### Role-based access control (RBAC)
-
-Authoritative mapping: **`backend/src/utils/role-permission.ts`**.
-
-| Role | Summary |
-|------|---------|
-| **OWNER** | Full workspace lifecycle; member management including **role changes**; full project & task CRUD; settings. |
-| **ADMIN** | Add/remove members; workspace **settings**; full project & task CRUD. **Cannot** delete the workspace or change member roles. |
-| **MEMBER** | **View**; **create** and **edit** tasks only — no task delete, no project/workspace admin. |
-
-Permissions are stored on **Role** documents in MongoDB. After changing the TypeScript map, run **`npm run seed`** in `backend/`.
-
-### Dashboard & landing
-
-- **Workspace dashboard**: metrics and entry points into tasks and projects.
-- **Project detail** views with task context.
-- **Public landing**: marketing sections, sign-in / sign-up.
-
----
-
-## Data model
-
-| Entity | Purpose |
-|--------|---------|
-| **User** | Account (email, password hash, profile fields, current workspace pointer). |
-| **Account** | Provider link for the user (e.g. email strategy uses `EMAIL` + email as `providerId`). |
-| **Workspace** | Team container; owner reference. |
-| **Member** | Join table: user ↔ workspace with **role**. |
-| **Role** | Named role with **permission** strings (seeded from code). |
-| **Project** | Belongs to workspace. |
-| **Task** | Belongs to project + workspace; `assignedTo` / `createdBy` → User. |
-
-Exact fields: `backend/src/models/`.
-
----
-
-## Frontend structure & routes
-
-| Route | Description |
-|-------|-------------|
-| `/` | Public landing |
-| `/sign-in`, `/sign-up` | Email/password auth |
-| `/invite/workspace/:inviteCode/join` | Accept workspace invite |
-| `/workspace/:workspaceId` | Workspace dashboard |
-| `/workspace/:workspaceId/tasks` | Tasks |
-| `/workspace/:workspaceId/members` | Members |
-| `/workspace/:workspaceId/settings` | Workspace settings |
-| `/workspace/:workspaceId/project/:projectId` | Project detail |
-
-Folders:
-
-- `client/src/components/` — UI (layout, workspace, forms, `ui/`).
-- `client/src/page/` — Route-level pages.
-- `client/src/lib/` — API client, `auth-token.ts`, `base-url.ts`.
-- `client/src/routes/` — Route config and guards.
-
----
-
-## Backend structure & API
-
-Routes are mounted under **`BASE_PATH`** (default **`/api`**).
-
-| Mount path | Auth | Responsibility |
-|------------|------|----------------|
-| `/api/auth` | Public | Register, login, logout |
-| `/api/user` | JWT required | Current user |
-| `/api/workspace` | JWT required | Workspaces, analytics, settings |
-| `/api/member` | JWT required | Members, invite join |
-| `/api/project` | JWT required | Projects |
-| `/api/task` | JWT required | Tasks |
-
-Patterns:
-
-- **`isAuthenticated`** — validates Bearer JWT, loads user, sets `req.user`.
-- **`roleGuard`** — permission checks for sensitive actions.
-- **Zod** — request validation; central **`errorHandler`** maps errors to HTTP responses.
-
----
-
-## Environment variables
-
-Never commit real **`.env`** files. Use **`backend/.env.example`** and **`client/.env.example`**.
-
-### Backend (`backend/.env`)
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | Optional | Server port (default `5000` in code if unset). |
-| `NODE_ENV` | Recommended | `development` or `production`. |
-| `BASE_PATH` | Optional | API prefix (default `/api`). |
-| `MONGO_URI` | **Yes** | MongoDB connection string. |
-| `JWT_SECRET` | **Yes** | Secret for signing access tokens (long random string in production). |
-| `JWT_EXPIRES_IN` | Optional | `jsonwebtoken` expiry (default `7d` in app config). |
-| `FRONTEND_ORIGIN` | **Yes** | Allowed browser origin(s) for **CORS**. **Comma-separated** for multiple values, e.g. `https://your-app.vercel.app,http://localhost:5173`. |
-
-### Frontend (`client/.env`)
-
-| Variable | Description |
-|----------|-------------|
-| `VITE_API_BASE_URL` | **Production / direct API:** full URL ending in `/api`, e.g. `https://your-api.onrender.com/api`. **Local dev with proxy:** use `/api` (see [Local development](#local-development-recommended)). |
-| `VITE_DEV_PROXY_TARGET` | Optional. Dev only. Backend URL for Vite proxy (default `http://127.0.0.1:8000`). |
-
-**Vercel / CI:** set `VITE_API_BASE_URL` at **build** time; Vite inlines it into the bundle.
-
----
-
-## Getting started
+## Quick start
 
 ### Prerequisites
 
-- **Node.js** (LTS)
-- **MongoDB** (local or [Atlas](https://www.mongodb.com/cloud/atlas))
+- [Node.js](https://nodejs.org/) LTS  
+- [MongoDB](https://www.mongodb.com/cloud/atlas) URI  
 
-### 1. Clone and install
+### Install
 
 ```bash
 git clone <your-repo-url>
 cd Task_Managemet
+
 cd backend && npm install && cd ..
 cd client && npm install && cd ..
 ```
 
-### 2. Configure environment
+### Configure
 
 ```bash
 cp backend/.env.example backend/.env
-cp client/.env.example client/.env
+# Set MONGO_URI, JWT_SECRET, FRONTEND_ORIGIN (see Environment section)
 ```
 
-- **Backend:** set `MONGO_URI`, `JWT_SECRET`, and `FRONTEND_ORIGIN` (include your Vite URL when testing from the browser against a local API).
-- **Client:** for the smoothest local experience, rely on **`client/.env.development`** (already in repo) which sets `VITE_API_BASE_URL=/api` and uses the Vite proxy.
+`client/.env.development` is tuned for **local proxy** (`VITE_API_BASE_URL=/api`).
 
-### 3. Seed roles
+### Seed roles (once per database)
 
 ```bash
 cd backend && npm run seed && cd ..
 ```
 
-### 4. Run (two terminals)
+### Run
 
 **Terminal A — API**
 
 ```bash
-cd backend
-npm run dev
+cd backend && npm run dev
 ```
 
 **Terminal B — Client**
 
 ```bash
-cd client
-npm run dev
+cd client && npm run dev
 ```
 
-Open the URL Vite prints (usually `http://localhost:5173`).
-
-### 5. Production build (frontend)
-
-```bash
-cd client
-npm run build
-npm run preview   # optional: test dist locally
-```
+Open **http://localhost:5173**, register, then open your workspace from the dashboard.
 
 ---
 
-## Local development (recommended)
+## Local development (Vite proxy)
 
-- **`client/.env.development`** sets `VITE_API_BASE_URL=/api`.
-- **`client/vite.config.ts`** proxies **`/api`** → **`http://127.0.0.1:8000`** (override with `VITE_DEV_PROXY_TARGET`).
-- The browser only talks to the Vite origin, so you avoid **CORS** issues while developing.
-- Ensure the **backend** is running on the proxied port (default **8000** matches a typical `backend/.env`).
+- **`client/.env.development`**: `VITE_API_BASE_URL=/api`  
+- **`vite.config.ts`**: proxies `/api` → `http://127.0.0.1:8000` (override with `VITE_DEV_PROXY_TARGET`)
 
-To call a **remote** API from local Vite instead, set in `.env.development` or `.env.local`:
-
-`VITE_API_BASE_URL=https://your-deployed-api.example.com/api`
-
-and add your dev origin to the backend’s **`FRONTEND_ORIGIN`** list on the server.
+The browser only sees the Vite origin; API calls are forwarded server-side, avoiding CORS during local development.
 
 ---
 
-## Database seeding
+## Frontend routes
 
-```bash
-cd backend
-npm run seed
-```
-
-Run after changing **`backend/src/utils/role-permission.ts`** so MongoDB roles stay aligned.
-
----
-
-## Authentication (JWT)
-
-1. **Register** — client `POST /api/auth/register` → stores **`token`**, navigates (e.g. to workspace).
-2. **Login** — `POST /api/auth/login` → same.
-3. **Protected calls** — Axios reads the token from storage and sets **`Authorization: Bearer …`**.
-4. **Expiry / invalid token** — API returns **401**; client may clear token and send the user home; sign-in page does not prefetch `/user/current` in a way that causes redirect loops.
+| Path | Screen |
+|------|--------|
+| `/` | Landing |
+| `/sign-in`, `/sign-up` | Auth |
+| `/invite/workspace/:inviteCode/join` | Invite accept |
+| `/workspace/:workspaceId` | Dashboard |
+| `/workspace/:workspaceId/tasks` | Tasks |
+| `/workspace/:workspaceId/members` | Members |
+| `/workspace/:workspaceId/settings` | Settings |
+| `/workspace/:workspaceId/project/:projectId` | Project detail |
 
 ---
 
-## Security notes
+## API overview
 
-- Use **HTTPS** in production for the API and the SPA.
-- **`JWT_SECRET`**: long, random, stored as a secret; rotate if compromised.
-- **CORS**: keep **`FRONTEND_ORIGIN`** to real front-end origins only (comma-separated list is fine).
-- **MongoDB**: credentials in env / secret manager, not in git.
-- **JWT in `localStorage`**: standard tradeoff for SPAs; mitigate with HTTPS, short-ish `JWT_EXPIRES_IN`, and XSS hygiene.
+Mounted under **`BASE_PATH`** (default **`/api`**).
+
+| Method / prefix | Auth | Purpose |
+|-----------------|------|---------|
+| `POST /auth/register` | Public | User + workspace + token |
+| `POST /auth/login` | Public | Token + user |
+| `POST /auth/logout` | Public | Client-side logout |
+| `GET /user/current` | JWT | Profile |
+| `/workspace/*` | JWT | Workspaces & analytics |
+| `/member/*` | JWT | Members & invite join |
+| `/project/*`, `/task/*` | JWT | Projects & tasks |
+
+---
+
+## RBAC (role-based access control)
+
+Authoritative permission map: **`backend/src/utils/role-permission.ts`**. Run **`npm run seed`** after changing it.
+
+| Role | Capabilities (summary) |
+|------|-------------------------|
+| **OWNER** | Full workspace lifecycle; **change member roles**; delete workspace; full project & task CRUD |
+| **ADMIN** | Members add/remove; workspace settings; full project & task CRUD — **no** workspace delete, **no** role changes |
+| **MEMBER** | View; create/edit **tasks** only — stricter limits on projects/settings |
+
+<details>
+<summary><strong>Expand: permission philosophy</strong></summary>
+
+- UI may hide buttons, but **every sensitive route** should rely on **`roleGuard`** or service-level checks so direct API calls cannot bypass rules.
+- **Role** documents in MongoDB store string permissions aligned with the TypeScript map; seeding keeps DB and code in sync.
+
+</details>
+
+---
+
+## Environment variables
+
+### Backend (`backend/.env`)
+
+| Variable | Description |
+|----------|-------------|
+| `PORT` | Listen port (e.g. `8000`) |
+| `NODE_ENV` | `development` or `production` |
+| `BASE_PATH` | API prefix; default `/api` |
+| `MONGO_URI` | MongoDB connection string |
+| `JWT_SECRET` | Secret for signing JWTs (use a long random value in prod) |
+| `JWT_EXPIRES_IN` | Optional; e.g. `7d` |
+| `FRONTEND_ORIGIN` | CORS allowlist — **comma-separated** origins |
+
+Template: **`backend/.env.example`**.
+
+### Frontend (build / dev)
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_BASE_URL` | Production: `https://api-host/api`. Dev with proxy: `/api` |
+| `VITE_DEV_PROXY_TARGET` | Dev: backend URL for proxy (default `http://127.0.0.1:8000`) |
+
+See **`client/.env.example`** and **`client/.env.development`**.
+
+---
+
+## JWT authentication recap
+
+1. **Register** or **login** → `{ token, user }`.  
+2. Client persists **token**; Axios sends **`Authorization: Bearer …`**.  
+3. **Protected** routes: middleware validates JWT, loads **User**, sets **`req.user`**.  
+4. **401**: client clears bad token; guest routes avoid unnecessary `/user/current` calls.
 
 ---
 
 ## Deployment
 
-| Component | Typical approach |
-|-----------|------------------|
-| **Frontend** | **Vercel** — project **Root Directory** = `client`; set **`VITE_API_BASE_URL`** for Production (and Preview if needed); build outputs `dist/`. |
-| **Backend** | **Render**, Railway, Fly.io, VPS — run `npm run build` then `npm start` in `backend/`. |
-| **Database** | MongoDB Atlas or self-hosted MongoDB. |
+### Frontend (e.g. Vercel)
 
-### Frontend (Vercel) checklist
+1. **Root Directory:** `client` (monorepo).  
+2. **Environment:** `VITE_API_BASE_URL=https://YOUR-API/api` for Production (+ Preview if needed).  
+3. **`client/vercel.json`:** rewrites all routes to **`index.html`** for SPA deep links.  
+4. **Redeploy** after env changes (Vite embeds vars at build time).
 
-- [ ] **Root Directory:** `client` (if the repo contains both `client` and `backend`).
-- [ ] **Environment variable:** `VITE_API_BASE_URL=https://YOUR-API-HOST/api` — set for **Production** (and **Preview** if you use preview URLs).
-- [ ] **Redeploy** after changing env vars (Vite bakes them at build time).
-- [ ] **`client/vercel.json`** — SPA **rewrites** all paths to `index.html` so deep links like **`/invite/workspace/…/join`** work when opened directly or refreshed.
+### Backend (e.g. Render)
 
-### Backend checklist
+1. Build: `npm run build`; Start: `npm start`.  
+2. Set `MONGO_URI`, `JWT_SECRET`, `NODE_ENV=production`, `FRONTEND_ORIGIN`.
 
-- [ ] `MONGO_URI`, `JWT_SECRET`, `JWT_EXPIRES_IN` (optional).
-- [ ] `FRONTEND_ORIGIN` includes every browser origin that calls the API (production URL, `http://localhost:5173` for local-to-remote tests, optional `*.vercel.app` handling is implemented in code for previews — still verify in your environment).
-- [ ] `NODE_ENV=production`
-- [ ] HTTPS for the public API URL
+### Checklist
+
+- [ ] HTTPS everywhere in production  
+- [ ] `FRONTEND_ORIGIN` lists every real browser origin  
+- [ ] `VITE_API_BASE_URL` ends with `/api` and matches deployed API  
+- [ ] MongoDB reachable from API host  
 
 ---
 
 ## Troubleshooting
 
-| Issue | What to check |
-|-------|----------------|
-| **CORS / “Network Error”** | `FRONTEND_ORIGIN` must include the **exact** browser origin (scheme + host + port). Use commas for multiple origins. |
-| **Vercel 404 on refresh / invite link** | Ensure **`client/vercel.json`** is deployed and trigger a new deployment. |
-| **`VITE_API_BASE_URL` missing in production** | Set in Vercel env and **redeploy**; empty value breaks API calls. |
-| **Local: API unreachable** | Backend running? Port matches **`VITE_DEV_PROXY_TARGET`**? Try `VITE_API_BASE_URL=/api` with the Vite proxy. |
-| **401 after login** | Wrong `JWT_SECRET` between deploys, expired token, or user inactive. |
-| **Sign-in page bounces to `/`** | Fixed in current client: unauthenticated `/user/current` should not hard-redirect; use latest client code. |
-| **Permission errors** | Run **`npm run seed`**; confirm the member’s **role** in the workspace. |
+| Symptom | Likely fix |
+|---------|------------|
+| CORS / network errors | Match `FRONTEND_ORIGIN` to exact origin; comma-separate multiple. |
+| Vercel 404 on refresh / invite URL | Ensure `vercel.json` is deployed. |
+| Wrong API host in production | Set `VITE_API_BASE_URL` on host + **rebuild**. |
+| Local API not hit | Run backend; check proxy port / `VITE_DEV_PROXY_TARGET`. |
+| Permission / role errors | `npm run seed`; check **Member** role in DB. |
 
 ---
 
-## Scripts reference
+## Scripts
 
-| Location | Command | Purpose |
-|----------|---------|---------|
-| `client` | `npm run dev` | Vite dev server (uses `.env.development` + proxy when configured). |
-| `client` | `npm run build` | Typecheck + production bundle |
+| Where | Command | Purpose |
+|-------|---------|---------|
+| `client` | `npm run dev` | Vite dev server |
+| `client` | `npm run build` | Typecheck + bundle |
+| `client` | `npm run preview` | Preview `dist` |
 | `client` | `npm run lint` | ESLint |
-| `client` | `npm run preview` | Serve `dist` locally |
-| `backend` | `npm run dev` | API with `ts-node-dev` |
-| `backend` | `npm run seed` | Seed roles |
-| `backend` | `npm run build` | Compile TypeScript to `dist/` |
+| `backend` | `npm run dev` | API + watch |
+| `backend` | `npm run build` | `tsc` → `dist/` |
 | `backend` | `npm start` | `node dist/index.js` |
+| `backend` | `npm run seed` | Seed roles |
 
 ---
 
-## Acknowledgements
+## Security notes
 
-**FlowPilot** — structured delivery: workspaces, projects, tasks, and roles in one place.
+- Strong **`JWT_SECRET`**, **HTTPS**, secrets only in env — never in git.  
+- JWT in **localStorage** is standard for SPAs; mitigate **XSS** (dependencies, CSP where possible).  
+- Rate limiting / refresh tokens are **not** included out of the box — consider for high-risk deployments.
+
+---
+
+## License
+
+This project is licensed under the **[MIT License](LICENSE)**.
+
+
+---
+
+<div align="center">
+
+<br/>
+
+<img src="https://readme-typing-svg.demolab.com?font=DM+Sans&weight=600&size=18&duration=2800&pause=900&color=6366F1&center=true&vCenter=true&width=420&lines=Built+with+FlowPilot+%E2%80%94+ship+with+clarity" alt="Footer tagline" />
+
+<br/>
+
+**FlowPilot** — workspaces, projects, tasks, one stack.
+
+</div>
