@@ -16,7 +16,7 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
         outline: "text-foreground",
-        [TaskStatusEnum.BACKLOG]: "bg-gray-100 text-gray-600",
+        [TaskStatusEnum.BACKLOG]: "bg-muted text-muted-foreground",
         [TaskStatusEnum.TODO]: "  bg-[#DEEBFF] text-[#0052CC]",
         [TaskStatusEnum.IN_PROGRESS]: "bg-yellow-100 text-yellow-600",
         [TaskStatusEnum.IN_REVIEW]: "bg-purple-100 text-purple-500",
@@ -24,7 +24,7 @@ const badgeVariants = cva(
         [TaskPriorityEnum.HIGH]: "bg-orange-100 text-orange-600",
         [TaskPriorityEnum.URGENT]: "bg-red-100 text-red-600",
         [TaskPriorityEnum.MEDIUM]: "bg-yellow-100 text-yellow-600",
-        [TaskPriorityEnum.LOW]: "bg-gray-100 text-gray-600",
+        [TaskPriorityEnum.LOW]: "bg-muted text-muted-foreground",
       },
     },
     defaultVariants: {
