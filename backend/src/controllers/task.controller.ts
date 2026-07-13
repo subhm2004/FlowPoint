@@ -4,6 +4,7 @@ import {
   createTaskSchema,
   taskIdSchema,
   updateTaskSchema,
+  updateTaskStatusSchema,
 } from "../validation/task.validation";
 import { projectIdSchema } from "../validation/project.validation";
 import { workspaceIdSchema } from "../validation/workspace.validation";
@@ -66,6 +67,34 @@ export const updateTaskController = asyncHandler(
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Task updated successfully",
+      task: updatedTask,
+    });
+  }
+);
+
+/** Board drag-and-drop: moves a card between columns, touching nothing but `status`. */
+export const updateTaskStatusController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    const { status } = updateTaskStatusSchema.parse(req.body);
+
+    const taskId = taskIdSchema.parse(req.params.id);
+    const projectId = projectIdSchema.parse(req.params.projectId);
+    const workspaceId = workspaceIdSchema.parse(req.params.workspaceId);
+
+    const { role } = await getMemberRoleInWorkspace(userId, workspaceId);
+    roleGuard(role, [Permissions.EDIT_TASK]);
+
+    const { updatedTask } = await updateTaskService(
+      workspaceId,
+      projectId,
+      taskId,
+      { status }
+    );
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: "Task status updated",
       task: updatedTask,
     });
   }

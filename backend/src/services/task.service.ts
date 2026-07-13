@@ -57,14 +57,15 @@ export const updateTaskService = async (
   workspaceId: string,
   projectId: string,
   taskId: string,
-  body: {
+  // Partial: the board's drag-and-drop sends status alone, the edit form sends everything.
+  body: Partial<{
     title: string;
-    description?: string;
+    description: string;
     priority: string;
     status: string;
-    assignedTo?: string | null;
-    dueDate?: string;
-  }
+    assignedTo: string | null;
+    dueDate: string;
+  }>
 ) => {
   const project = await ProjectModel.findById(projectId);
 

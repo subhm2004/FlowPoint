@@ -46,3 +46,8 @@ export const updateTaskSchema = z.object({
   assignedTo: assignedToSchema,
   dueDate: dueDateSchema,
 });
+
+/** Dragging a card on the board changes exactly one field, so it gets its own schema. */
+export const updateTaskStatusSchema = z.object({
+  status: statusSchema,
+});
