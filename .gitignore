@@ -38,6 +38,9 @@ coverage/
 .eslintcache
 *.local
 
+# Local developer scripts (not part of the app)
+make_commits.sh
+
 # OS
 .DS_Store
 Thumbs.db
