@@ -68,5 +68,17 @@ app.use(errorHandler);
 
 app.listen(config.PORT, async () => {
   console.log(`Server listening on port ${config.PORT} in ${config.NODE_ENV}`);
+
+  // Printed at boot so the very top of the Render log answers "is Google set up, and
+  // with which URLs?" — no secret is printed, only whether one is present.
+  console.log(
+    `[google-oauth] config enabled=${config.GOOGLE_ENABLED} ` +
+      `client_id=${config.GOOGLE_CLIENT_ID ? "set" : "MISSING"} ` +
+      `client_secret=${config.GOOGLE_CLIENT_SECRET ? "set" : "MISSING"} ` +
+      `callback_url=${config.GOOGLE_CALLBACK_URL || "MISSING"} ` +
+      `frontend_callback=${config.FRONTEND_GOOGLE_CALLBACK_URL}`
+  );
+  console.log(`[cors] allowed origins: ${config.FRONTEND_ORIGINS.join(", ")}`);
+
   await connectDatabase();
 });

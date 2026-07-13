@@ -19,6 +19,23 @@ import {
 
 const OAUTH_STATE_COOKIE = "flowpilot_oauth_state";
 
+/**
+ * One greppable prefix for the whole Google flow, so a sign-in can be followed in the
+ * Render log by filtering on "[google-oauth]".
+ *
+ * `flow` is the first 8 characters of the state nonce. It is printed at every step, so
+ * the "start" line and the "callback" line of the SAME sign-in can be tied together even
+ * when several people are signing in at once.
+ *
+ * Never pass a token, an authorization code, or the client secret in here.
+ */
+const log = (flow: string, event: string, fields: Record<string, unknown> = {}) => {
+  const rest = Object.entries(fields)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(" ");
+  console.log(`[google-oauth] ${flow} ${event}${rest ? " " + rest : ""}`);
+};
+
 const googleClient = () =>
   new OAuth2Client({
     clientId: config.GOOGLE_CLIENT_ID,
@@ -113,6 +130,13 @@ export const logOutController = asyncHandler(
 export const googleAuthController = asyncHandler(
   async (req: Request, res: Response) => {
     if (!config.GOOGLE_ENABLED) {
+      // Prints exactly which of the three is missing, so a half-filled Render env
+      // is obvious from the log instead of guesswork.
+      log("-", "ABORT not_configured", {
+        has_client_id: Boolean(config.GOOGLE_CLIENT_ID),
+        has_client_secret: Boolean(config.GOOGLE_CLIENT_SECRET),
+        has_callback_url: Boolean(config.GOOGLE_CALLBACK_URL),
+      });
       return res.redirect(
         frontendUrl({ error: "Google sign-in is not configured on the server." })
       );
@@ -121,6 +145,14 @@ export const googleAuthController = asyncHandler(
     const nonce = randomUUID();
     const returnUrl = safeReturnUrl(req.query.returnUrl);
     const state = signOAuthState({ nonce, returnUrl });
+
+    // The redirect_uri below must match Google's console character for character.
+    // Logging it means a redirect_uri_mismatch can be diagnosed by eye, from the log.
+    log(nonce.slice(0, 8), "START", {
+      redirect_uri: config.GOOGLE_CALLBACK_URL,
+      returnUrl: returnUrl ?? "-",
+      origin: req.headers.origin ?? "-",
+    });
 
     // SameSite=Lax still rides along on Google's top-level GET redirect back to us,
     // which is exactly the one navigation we need it for.
@@ -146,34 +178,58 @@ export const googleAuthController = asyncHandler(
 /** Step 2 — Google hands back a code; trade it for an identity and mint our own JWT. */
 export const googleCallbackController = asyncHandler(
   async (req: Request, res: Response) => {
-    const fail = (message: string) => res.redirect(frontendUrl({ error: message }));
+    // `flow` starts unknown: until the state JWT is verified we do not know which
+    // sign-in this callback belongs to. It is filled in as soon as we do.
+    let flow = "?";
+
+    const fail = (reason: string, message: string, extra: Record<string, unknown> = {}) => {
+      log(flow, `FAIL ${reason}`, extra);
+      return res.redirect(frontendUrl({ error: message }));
+    };
 
     if (!config.GOOGLE_ENABLED) {
-      return fail("Google sign-in is not configured on the server.");
+      return fail("not_configured", "Google sign-in is not configured on the server.");
     }
 
     const cookieNonce = readCookie(req, OAUTH_STATE_COOKIE);
     res.clearCookie(OAUTH_STATE_COOKIE, { path: "/" });
 
     const { code, state } = req.query;
+
+    log(flow, "CALLBACK", {
+      has_code: typeof code === "string",
+      has_state: typeof state === "string",
+      has_cookie: Boolean(cookieNonce),
+      google_error: typeof req.query.error === "string" ? req.query.error : "-",
+    });
+
     if (typeof req.query.error === "string") {
-      return fail("Google sign-in was cancelled.");
+      // Google itself refused. This is where redirect_uri_mismatch and
+      // access_denied (user pressed Cancel) show up.
+      return fail("google_said_" + req.query.error, "Google sign-in was cancelled.");
     }
     if (typeof code !== "string" || typeof state !== "string") {
-      return fail("Google sign-in failed: no authorization code was returned.");
+      return fail("no_code", "Google sign-in failed: no authorization code was returned.");
     }
 
     let statePayload;
     try {
       statePayload = verifyOAuthState(state);
+      flow = statePayload.nonce.slice(0, 8);
     } catch {
-      return fail("Google sign-in expired. Please try again.");
+      // Expired (>10 min) or signed with a different JWT_SECRET — which is what you
+      // get if JWT_SECRET differs between the instance that started the flow and the
+      // one handling the callback.
+      return fail("bad_state", "Google sign-in expired. Please try again.");
     }
 
     // The signature proves we issued the state; the cookie proves this is the same
     // browser that started the flow. Both are needed to stop login-CSRF.
     if (!cookieNonce || cookieNonce !== statePayload.nonce) {
-      return fail("Google sign-in failed: state mismatch. Please try again.");
+      return fail("state_mismatch", "Google sign-in failed: state mismatch. Please try again.", {
+        cookie_present: Boolean(cookieNonce),
+        cookie_matches: cookieNonce === statePayload.nonce,
+      });
     }
 
     let payload;
@@ -181,24 +237,31 @@ export const googleCallbackController = asyncHandler(
       const client = googleClient();
       const { tokens } = await client.getToken(code);
       if (!tokens.id_token) {
-        return fail("Google sign-in failed: no identity token was returned.");
+        return fail("no_id_token", "Google sign-in failed: no identity token was returned.");
       }
       const ticket = await client.verifyIdToken({
         idToken: tokens.id_token,
         audience: config.GOOGLE_CLIENT_ID,
       });
       payload = ticket.getPayload();
-    } catch {
-      return fail("Google sign-in failed: could not verify your Google account.");
+      log(flow, "TOKEN_OK", { sub: payload?.sub ?? "-", email_verified: payload?.email_verified });
+    } catch (error) {
+      // Google's own reason — "invalid_client" means a wrong/rotated secret,
+      // "invalid_grant" a stale or reused code. Without printing it, this failure
+      // is completely blind.
+      const reason = error instanceof Error ? error.message : String(error);
+      return fail("token_exchange", "Google sign-in failed: could not verify your Google account.", {
+        google_says: JSON.stringify(reason),
+      });
     }
 
     if (!payload?.sub || !payload.email) {
-      return fail("Google did not return an email address.");
+      return fail("no_email", "Google did not return an email address.");
     }
     // Without this, anyone able to set an unverified Google email could take over
     // an existing FlowPilot account through the account-linking path below.
     if (!payload.email_verified) {
-      return fail("Your Google email address is not verified.");
+      return fail("email_unverified", "Your Google email address is not verified.");
     }
 
     try {
@@ -207,6 +270,12 @@ export const googleCallbackController = asyncHandler(
         email: payload.email,
         name: payload.name || payload.email.split("@")[0],
         profilePicture: payload.picture ?? null,
+      });
+
+      log(flow, "SUCCESS", {
+        userId: String(user._id),
+        email: payload.email,
+        redirect: config.FRONTEND_GOOGLE_CALLBACK_URL,
       });
 
       return res.redirect(
@@ -220,7 +289,7 @@ export const googleCallbackController = asyncHandler(
       // the JSON error handler would just print raw JSON at them.
       const message =
         error instanceof Error ? error.message : "Google sign-in failed.";
-      return fail(message);
+      return fail("user_service", message, { email: payload.email });
     }
   }
 );
