@@ -8,6 +8,7 @@ import Settings from "@/page/workspace/Settings";
 import Tasks from "@/page/workspace/Tasks";
 import { AUTH_ROUTES, BASE_ROUTE, PROTECTED_ROUTES } from "./routePaths";
 import InviteUser from "@/page/invite/InviteUser";
+import GoogleOAuthCallback from "@/page/auth/GoogleOAuthCallback";
 
 export const authenticationRoutePaths = [
   { path: AUTH_ROUTES.SIGN_IN, element: <SignIn /> },
@@ -25,4 +26,5 @@ export const protectedRoutePaths = [
 export const baseRoutePaths = [
   { path: AUTH_ROUTES.LANDING, element: <Landing /> },
   { path: BASE_ROUTE.INVITE_URL, element: <InviteUser /> },
+  { path: BASE_ROUTE.GOOGLE_OAUTH_CALLBACK, element: <GoogleOAuthCallback /> },
 ];

@@ -18,4 +18,7 @@ export const PROTECTED_ROUTES = {
 
 export const BASE_ROUTE = {
   INVITE_URL: "/invite/workspace/:inviteCode/join",
+  // Deliberately not in AUTH_ROUTES: the AuthRoute guard bounces signed-in users away,
+  // and this page has to run *while* the token is being stored.
+  GOOGLE_OAUTH_CALLBACK: "/auth/google/callback",
 };

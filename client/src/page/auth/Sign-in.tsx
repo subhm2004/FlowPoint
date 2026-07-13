@@ -24,6 +24,7 @@ import { loginMutationFn } from "@/lib/api";
 import { setAuthToken } from "@/lib/auth-token";
 import { toast } from "@/hooks/use-toast";
 import { Loader } from "lucide-react";
+import GoogleOAuthButton from "@/components/auth/google-oauth-button";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -148,6 +149,19 @@ const SignIn = () => {
                         Login
                       </Button>
                     </div>
+                    <div className="relative text-center text-sm">
+                      <span
+                        className="absolute inset-x-0 top-1/2 border-t border-border"
+                        aria-hidden
+                      />
+                      <span className="relative bg-card px-2 text-muted-foreground">
+                        Or continue with
+                      </span>
+                    </div>
+                    <GoogleOAuthButton
+                      label="Continue with Google"
+                      returnUrl={returnUrl}
+                    />
                     <div className="text-center text-sm">
                       Don&apos;t have an account?{" "}
                       <Link

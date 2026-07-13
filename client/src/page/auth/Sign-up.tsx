@@ -24,6 +24,7 @@ import { registerMutationFn } from "@/lib/api";
 import { setAuthToken } from "@/lib/auth-token";
 import { toast } from "@/hooks/use-toast";
 import { Loader } from "lucide-react";
+import GoogleOAuthButton from "@/components/auth/google-oauth-button";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -161,6 +162,16 @@ const SignUp = () => {
                         Sign up
                       </Button>
                     </div>
+                    <div className="relative text-center text-sm">
+                      <span
+                        className="absolute inset-x-0 top-1/2 border-t border-border"
+                        aria-hidden
+                      />
+                      <span className="relative bg-card px-2 text-muted-foreground">
+                        Or continue with
+                      </span>
+                    </div>
+                    <GoogleOAuthButton label="Sign up with Google" />
                     <div className="text-center text-sm">
                       Already have an account?{" "}
                       <Link to="/sign-in" className="underline underline-offset-4">
