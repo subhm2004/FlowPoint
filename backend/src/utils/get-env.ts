@@ -8,3 +8,9 @@ export const getEnv = (key: string, defaultValue: string = ""): string => {
   }
   return value.trim();
 };
+
+/** Like getEnv, but an unset variable yields the default instead of throwing. */
+export const getOptionalEnv = (key: string, defaultValue = ""): string => {
+  const value = process.env[key];
+  return value === undefined ? defaultValue.trim() : value.trim();
+};
