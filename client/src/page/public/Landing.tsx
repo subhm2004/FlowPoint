@@ -1,4 +1,3 @@
-import { FlowPilotLogo } from "@/components/brand/flowpilot-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -12,9 +11,12 @@ import {
   Send,
   Sparkles,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ThemeToggle from "@/components/theme-toggle";
+import Reveal from "@/components/landing/reveal";
+import CountUp from "@/components/landing/count-up";
+import HeroBoardPreview from "@/components/landing/hero-board-preview";
 
 type Testimonial = {
   quote: string;
@@ -95,10 +97,12 @@ function TestimonialMarquee({
   const loop = [...items, ...items];
 
   return (
-    <div className="overflow-hidden py-1">
+    <div className="group overflow-hidden py-1">
       <div
         className={cn(
           "flex w-max gap-5 md:gap-6",
+          // Freeze the row while a visitor is reading a card.
+          "group-hover:[animation-play-state:paused] motion-reduce:animate-none",
           reverse ? "animate-marquee-reverse" : "animate-marquee"
         )}
       >
@@ -124,85 +128,6 @@ function TestimonialMarquee({
             </div>
           </article>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function HeroProductPreview() {
-  const rows = [
-    { title: "API rollout v2", meta: "Engineering · Due Fri", status: "In progress", tone: "violet" as const },
-    { title: "Q2 roadmap review", meta: "Leadership · Done", status: "Done", tone: "emerald" as const },
-    { title: "Design system audit", meta: "Design · Next week", status: "Todo", tone: "amber" as const },
-  ];
-
-  const toneStyles = {
-    violet: "bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200",
-    emerald: "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200",
-    amber: "bg-amber-500/15 text-amber-800 dark:bg-amber-500/20 dark:text-amber-100",
-  };
-
-  return (
-    <div className="animate-hero-float relative mx-auto w-full max-w-md sm:max-w-lg lg:mx-0 lg:max-w-none">
-      <div
-        className="pointer-events-none absolute -inset-8 rounded-[2.5rem] bg-gradient-to-tr from-violet-500/25 via-fuchsia-500/10 to-cyan-500/20 opacity-90 blur-3xl dark:from-violet-500/20 dark:via-fuchsia-500/5 dark:to-cyan-500/15"
-        aria-hidden
-      />
-      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/90 shadow-[0_25px_60px_-15px_hsl(var(--foreground)/0.18)] ring-1 ring-black/[0.04] backdrop-blur-sm dark:bg-zinc-900/90 dark:ring-white/[0.06] md:rounded-3xl">
-        <div className="flex items-center gap-3 border-b border-border/60 bg-muted/40 px-4 py-3.5 md:px-5">
-          <div className="flex gap-1.5" aria-hidden>
-            <span className="h-2.5 w-2.5 rounded-full bg-red-400/90" />
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-400/90" />
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/90" />
-          </div>
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <FlowPilotLogo className="h-6 w-6 rounded-md" />
-            <span className="truncate text-xs font-semibold text-muted-foreground md:text-[13px]">
-              FlowPilot / Product workspace
-            </span>
-          </div>
-        </div>
-        <div className="flex gap-0 p-4 md:p-5">
-          <div
-            className="hidden w-20 shrink-0 flex-col gap-2.5 border-r border-border/50 pr-4 sm:flex md:w-24"
-            aria-hidden
-          >
-            <div className="h-2 w-full rounded-full bg-primary/80" />
-            <div className="h-2 w-[80%] rounded-full bg-muted-foreground/20" />
-            <div className="h-2 w-[60%] rounded-full bg-muted-foreground/15" />
-            <div className="mt-4 h-2 w-full rounded-full bg-muted-foreground/15" />
-            <div className="h-2 w-[66%] rounded-full bg-muted-foreground/12" />
-          </div>
-          <div className="min-w-0 flex-1 space-y-3 sm:pl-5">
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                Active tasks
-              </p>
-              <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                3 projects
-              </span>
-            </div>
-            {rows.map((row) => (
-              <div
-                key={row.title}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/70 px-3 py-3 shadow-sm dark:bg-zinc-950/60"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">{row.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">{row.meta}</p>
-                </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide",
-                    toneStyles[row.tone]
-                  )}
-                >
-                  {row.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -325,6 +250,20 @@ const Landing = () => {
   const [faqQuery, setFaqQuery] = useState("");
   const [footerEmail, setFooterEmail] = useState("");
   const [footerEmailSent, setFooterEmailSent] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollable =
+        document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(
+        scrollable <= 0 ? 0 : (window.scrollY / scrollable) * 100
+      );
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const filteredFaqs = useMemo(() => {
     const q = faqQuery.trim().toLowerCase();
@@ -337,6 +276,13 @@ const Landing = () => {
 
   return (
     <div className="text-foreground">
+      {/* Reading progress — sits above the sticky header. */}
+      <div
+        className="fixed inset-x-0 top-0 z-[60] h-0.5 origin-left bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 transition-transform duration-150"
+        style={{ transform: `scaleX(${scrollProgress / 100})` }}
+        aria-hidden
+      />
+      <div className="landing-grain pointer-events-none fixed inset-0 -z-10" aria-hidden />
       <main className="mx-auto w-full max-w-7xl px-4 pb-8 pt-2 sm:pt-3 md:px-6 md:pb-16 lg:px-8">
         {/* Hero — split layout + product preview */}
         <section className="relative overflow-hidden px-0 pt-4 sm:pt-6 md:pt-8 lg:pt-10">
@@ -438,7 +384,7 @@ const Landing = () => {
                   "lg:pt-[3.25rem] xl:pt-[3.5rem]"
                 )}
               >
-                <HeroProductPreview />
+                <HeroBoardPreview />
               </div>
             </div>
 
@@ -447,13 +393,15 @@ const Landing = () => {
               style={{ animationDelay: "0.2s" }}
             >
               {[
-                { k: "100+", v: "Teams onboarded" },
+                { k: <CountUp to={100} suffix="+" />, v: "Teams onboarded" },
                 { k: "One", v: "Source of truth" },
-                { k: "Roles", v: "Built-in permissions" },
+                { k: <CountUp to={3} />, v: "Roles, built in" },
                 { k: "Zero", v: "Install required" },
               ].map((s) => (
                 <div key={s.v} className="min-w-0 text-left">
-                  <p className="text-xl font-extrabold tracking-tight text-foreground md:text-2xl">{s.k}</p>
+                  <p className="bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-xl font-extrabold tracking-tight text-transparent md:text-2xl">
+                    {s.k}
+                  </p>
                   <p className="mt-0.5 text-xs font-medium text-muted-foreground md:text-sm">{s.v}</p>
                 </div>
               ))}
@@ -462,277 +410,289 @@ const Landing = () => {
         </section>
 
         {/* Features — theme-aware cards (light / dark) */}
-        <section
-          id="features"
-          className="landing-features-glow relative mt-8 scroll-mt-28 rounded-3xl border border-border/40 py-10 shadow-sm md:mt-10 md:py-14"
-        >
-          <div className="text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-400">
-              Platform
-            </p>
-            <h2 className="mt-3 text-4xl font-extrabold tracking-tight md:mt-4 md:text-5xl lg:text-[2.75rem]">
-              Everything you need to run delivery
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl font-medium leading-relaxed text-muted-foreground md:mt-5 md:max-w-3xl md:text-xl">
-              Workspaces, roles, projects, and tasks on one calm surface — fewer tools, clearer ownership, faster
-              shipping.
-            </p>
-          </div>
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-            {showcaseFeatures.map((f) => (
-              <article
-                key={f.label}
-                className={cn(
-                  "group relative overflow-hidden rounded-3xl border p-7 shadow-lg ring-1 ring-black/[0.04] md:p-8",
-                  "border-border/70 bg-gradient-to-b from-card via-card to-muted/25",
-                  "transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/25 hover:shadow-xl hover:ring-primary/10",
-                  "dark:border-white/10 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950 dark:shadow-2xl dark:ring-white/[0.06]",
-                  "dark:hover:border-white/20 dark:hover:shadow-2xl dark:hover:shadow-violet-500/10 dark:hover:ring-primary/20"
-                )}
-              >
-                <div
-                  className={cn(
-                    "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-100 dark:opacity-90",
-                    f.gradient
-                  )}
-                />
-                <div className="relative">
-                  <p className={cn("text-xs font-bold tracking-[0.2em] md:text-[13px]", f.labelClass)}>
-                    {f.label.toUpperCase()}
-                  </p>
-                  <h3 className="mt-4 text-xl font-bold leading-snug text-foreground md:text-[1.35rem]">
-                    {f.title}
-                  </h3>
-                  <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
-                    {f.description}
-                  </p>
-                  <div className="mt-9 flex items-end justify-between border-t border-border/80 pt-5 dark:border-white/10">
-                    <div className="flex gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-blue-500 dark:bg-blue-400" />
-                      <span className="h-2.5 w-2.5 rounded-full bg-pink-500 dark:bg-pink-400" />
-                      <span className="h-2.5 w-2.5 rounded-full bg-amber-500 dark:bg-amber-400" />
-                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-                    </div>
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      live
-                    </span>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* Discover */}
-        <section id="discover" className="mt-16 scroll-mt-28 text-center md:mt-20">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">
-            Discover
-          </p>
-          <h2 className="mt-3 text-4xl font-extrabold tracking-tight md:mt-4 md:text-5xl lg:text-[2.75rem]">
-            Deliver at the speed of clarity
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl font-medium leading-relaxed text-muted-foreground md:mt-5 md:max-w-3xl md:text-xl">
-            Replace scattered docs and noisy threads with one workspace your whole team actually checks.
-          </p>
-          <div className="mt-10 grid gap-5 text-left md:grid-cols-3 md:gap-6">
-            <article className="group rounded-3xl border border-border/60 bg-card/90 p-7 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg md:p-8">
-              <div className="mb-5 inline-flex rounded-xl bg-primary/10 p-3 text-primary ring-1 ring-primary/10 transition-colors group-hover:bg-primary/15">
-                <MessageCircleMore className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold md:text-xl">Collaborate instantly</h3>
-              <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
-                Discuss blockers and progress in one shared view — fewer meetings, faster decisions.
-              </p>
-            </article>
-            <article className="group rounded-3xl border border-border/60 bg-card/90 p-7 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg md:p-8">
-              <div className="mb-5 inline-flex rounded-xl bg-primary/10 p-3 text-primary ring-1 ring-primary/10 transition-colors group-hover:bg-primary/15">
-                <Layers3 className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold md:text-xl">Structure your work</h3>
-              <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
-                From workspace to project to task — hierarchy that matches how teams actually work.
-              </p>
-            </article>
-            <article className="group rounded-3xl border border-border/60 bg-card/90 p-7 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg md:p-8">
-              <div className="mb-5 inline-flex rounded-xl bg-primary/10 p-3 text-primary ring-1 ring-primary/10 transition-colors group-hover:bg-primary/15">
-                <Globe2 className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold md:text-xl">Work from anywhere</h3>
-              <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
-                Browser-based, always available — distributed teams stay aligned around the same source of truth.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section
-          id="how-it-works"
-          className="relative mt-16 scroll-mt-28 md:mt-20"
-        >
-          <div className="relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-b from-card via-card to-muted/30 px-6 py-12 shadow-lg dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950 md:px-12 md:py-16">
-            <div
-              className="pointer-events-none absolute -right-24 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-cyan-500/10 blur-3xl dark:bg-cyan-500/15"
-              aria-hidden
-            />
-            <div className="relative text-center">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">
-                How it works
+        <Reveal>
+          <section
+            id="features"
+            className="landing-features-glow relative mt-8 scroll-mt-28 rounded-3xl border border-border/40 py-10 shadow-sm md:mt-10 md:py-14"
+          >
+            <div className="text-center">
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-400">
+                Platform
               </p>
               <h2 className="mt-3 text-4xl font-extrabold tracking-tight md:mt-4 md:text-5xl lg:text-[2.75rem]">
-                From empty workspace to aligned team
+                Everything you need to run delivery
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl font-medium text-muted-foreground md:mt-5 md:text-lg">
-                Three simple moves — no playbook required.
+              <p className="mx-auto mt-4 max-w-2xl font-medium leading-relaxed text-muted-foreground md:mt-5 md:max-w-3xl md:text-xl">
+                Workspaces, roles, projects, and tasks on one calm surface — fewer tools, clearer ownership, faster
+                shipping.
               </p>
             </div>
-            <div className="relative mt-12 grid gap-8 md:grid-cols-3 md:gap-6 lg:gap-8">
-              {howItWorks.map((item) => (
+            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+              {showcaseFeatures.map((f) => (
                 <article
-                  key={item.step}
-                  className="group relative rounded-2xl border border-border/60 bg-background/70 p-7 text-left shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-md md:rounded-3xl md:p-8 dark:bg-zinc-950/50"
+                  key={f.label}
+                  className={cn(
+                    "group relative overflow-hidden rounded-3xl border p-7 shadow-lg ring-1 ring-black/[0.04] md:p-8",
+                    "border-border/70 bg-gradient-to-b from-card via-card to-muted/25",
+                    "transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/25 hover:shadow-xl hover:ring-primary/10",
+                    "dark:border-white/10 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950 dark:shadow-2xl dark:ring-white/[0.06]",
+                    "dark:hover:border-white/20 dark:hover:shadow-2xl dark:hover:shadow-violet-500/10 dark:hover:ring-primary/20"
+                  )}
                 >
-                  <span className="inline-flex rounded-xl bg-gradient-to-br from-violet-500/15 to-cyan-500/10 px-3 py-1.5 font-mono text-sm font-bold text-violet-700 dark:text-violet-300">
-                    {item.step}
-                  </span>
-                  <h3 className="mt-5 text-xl font-bold tracking-tight md:text-[1.35rem]">{item.title}</h3>
-                  <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
-                    {item.description}
-                  </p>
+                  <div
+                    className={cn(
+                      "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-100 dark:opacity-90",
+                      f.gradient
+                    )}
+                  />
+                  <div className="relative">
+                    <p className={cn("text-xs font-bold tracking-[0.2em] md:text-[13px]", f.labelClass)}>
+                      {f.label.toUpperCase()}
+                    </p>
+                    <h3 className="mt-4 text-xl font-bold leading-snug text-foreground md:text-[1.35rem]">
+                      {f.title}
+                    </h3>
+                    <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
+                      {f.description}
+                    </p>
+                    <div className="mt-9 flex items-end justify-between border-t border-border/80 pt-5 dark:border-white/10">
+                      <div className="flex gap-1.5">
+                        <span className="h-2.5 w-2.5 rounded-full bg-blue-500 dark:bg-blue-400" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-pink-500 dark:bg-pink-400" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-amber-500 dark:bg-amber-400" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                      </div>
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        live
+                      </span>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
-            <div className="relative mt-10 flex justify-center">
-              <Link to="/sign-up">
+          </section>
+        </Reveal>
+
+        {/* Discover */}
+        <Reveal>
+          <section id="discover" className="mt-16 scroll-mt-28 text-center md:mt-20">
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">
+              Discover
+            </p>
+            <h2 className="mt-3 text-4xl font-extrabold tracking-tight md:mt-4 md:text-5xl lg:text-[2.75rem]">
+              Deliver at the speed of clarity
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl font-medium leading-relaxed text-muted-foreground md:mt-5 md:max-w-3xl md:text-xl">
+              Replace scattered docs and noisy threads with one workspace your whole team actually checks.
+            </p>
+            <div className="mt-10 grid gap-5 text-left md:grid-cols-3 md:gap-6">
+              <article className="group rounded-3xl border border-border/60 bg-card/90 p-7 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg md:p-8">
+                <div className="mb-5 inline-flex rounded-xl bg-primary/10 p-3 text-primary ring-1 ring-primary/10 transition-colors group-hover:bg-primary/15">
+                  <MessageCircleMore className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-bold md:text-xl">Collaborate instantly</h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
+                  Discuss blockers and progress in one shared view — fewer meetings, faster decisions.
+                </p>
+              </article>
+              <article className="group rounded-3xl border border-border/60 bg-card/90 p-7 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg md:p-8">
+                <div className="mb-5 inline-flex rounded-xl bg-primary/10 p-3 text-primary ring-1 ring-primary/10 transition-colors group-hover:bg-primary/15">
+                  <Layers3 className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-bold md:text-xl">Structure your work</h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
+                  From workspace to project to task — hierarchy that matches how teams actually work.
+                </p>
+              </article>
+              <article className="group rounded-3xl border border-border/60 bg-card/90 p-7 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg md:p-8">
+                <div className="mb-5 inline-flex rounded-xl bg-primary/10 p-3 text-primary ring-1 ring-primary/10 transition-colors group-hover:bg-primary/15">
+                  <Globe2 className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-bold md:text-xl">Work from anywhere</h3>
+                <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
+                  Browser-based, always available — distributed teams stay aligned around the same source of truth.
+                </p>
+              </article>
+            </div>
+          </section>
+        </Reveal>
+
+        {/* How it works */}
+        <Reveal>
+          <section
+            id="how-it-works"
+            className="relative mt-16 scroll-mt-28 md:mt-20"
+          >
+            <div className="relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-b from-card via-card to-muted/30 px-6 py-12 shadow-lg dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950 md:px-12 md:py-16">
+              <div
+                className="pointer-events-none absolute -right-24 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-cyan-500/10 blur-3xl dark:bg-cyan-500/15"
+                aria-hidden
+              />
+              <div className="relative text-center">
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">
+                  How it works
+                </p>
+                <h2 className="mt-3 text-4xl font-extrabold tracking-tight md:mt-4 md:text-5xl lg:text-[2.75rem]">
+                  From empty workspace to aligned team
+                </h2>
+                <p className="mx-auto mt-4 max-w-2xl font-medium text-muted-foreground md:mt-5 md:text-lg">
+                  Three simple moves — no playbook required.
+                </p>
+              </div>
+              <div className="relative mt-12 grid gap-8 md:grid-cols-3 md:gap-6 lg:gap-8">
+                {howItWorks.map((item) => (
+                  <article
+                    key={item.step}
+                    className="group relative rounded-2xl border border-border/60 bg-background/70 p-7 text-left shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-md md:rounded-3xl md:p-8 dark:bg-zinc-950/50"
+                  >
+                    <span className="inline-flex rounded-xl bg-gradient-to-br from-violet-500/15 to-cyan-500/10 px-3 py-1.5 font-mono text-sm font-bold text-violet-700 dark:text-violet-300">
+                      {item.step}
+                    </span>
+                    <h3 className="mt-5 text-xl font-bold tracking-tight md:text-[1.35rem]">{item.title}</h3>
+                    <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground md:text-base">
+                      {item.description}
+                    </p>
+                  </article>
+                ))}
+              </div>
+              <div className="relative mt-10 flex justify-center">
+                <Link to="/sign-up">
+                  <Button
+                    size="lg"
+                    className="rounded-full px-8 font-bold shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    Start your workspace
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </section>
+        </Reveal>
+
+        {/* Testimonials */}
+        <Reveal>
+          <section id="testimonials" className="mt-16 scroll-mt-28 md:mt-20">
+            <div className="flex flex-col items-center text-center">
+              <span className="rounded-full border border-border/80 bg-muted/40 px-5 py-2 text-sm font-bold uppercase tracking-wider text-muted-foreground shadow-sm backdrop-blur">
+                Testimonials
+              </span>
+              <h2 className="mt-5 text-4xl font-extrabold tracking-tight md:mt-6 md:text-5xl">
+                What our 100+ users say
+              </h2>
+              <p className="mt-3 max-w-2xl text-base font-medium text-muted-foreground md:mt-4 md:text-lg">
+                See what teams say about shipping faster with FlowPilot.
+              </p>
+            </div>
+            <div className="relative mt-10 space-y-5 md:mt-12">
+              <div
+                className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-background to-transparent md:w-20"
+                aria-hidden
+              />
+              <div
+                className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-background to-transparent md:w-20"
+                aria-hidden
+              />
+              <TestimonialMarquee items={testimonialsRowOne} />
+              <TestimonialMarquee items={testimonialsRowTwo} reverse />
+            </div>
+          </section>
+        </Reveal>
+
+        {/* FAQ — light, soft accent (readable in light & dark) */}
+        <Reveal>
+          <section
+            id="faq"
+            className="relative mt-16 scroll-mt-28 overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-violet-500/[0.07] via-card/95 to-cyan-500/[0.08] px-6 py-12 shadow-[0_20px_60px_-24px_hsl(var(--foreground)/0.12)] md:mt-20 md:px-12 md:py-16 dark:from-violet-500/10 dark:via-card/90 dark:to-cyan-500/10"
+          >
+            <div
+              className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-500/15"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-cyan-400/15 blur-3xl dark:bg-cyan-500/10"
+              aria-hidden
+            />
+            <div className="relative">
+              <div className="flex flex-col gap-8 border-b border-border/50 pb-10 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <h2 className="text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
+                    FAQs
+                  </h2>
+                  <p className="mt-3 text-base font-medium text-muted-foreground md:mt-4 md:text-lg">
+                    Get all your questions answered about FlowPilot.
+                  </p>
+                </div>
+                <div className="w-full md:max-w-md">
+                  <Input
+                    type="search"
+                    placeholder="Search questions..."
+                    value={faqQuery}
+                    onChange={(e) => setFaqQuery(e.target.value)}
+                    className="h-12 rounded-full border-border/80 bg-background/90 pl-5 text-base shadow-sm backdrop-blur placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-violet-500/35 md:h-14 md:pl-6"
+                  />
+                </div>
+              </div>
+              <div className="mt-10 grid gap-4 md:grid-cols-2 md:gap-5">
+                {filteredFaqs.map((faq) => (
+                  <details
+                    key={faq.question}
+                    className="group rounded-2xl border border-border/70 bg-background/80 p-5 shadow-sm backdrop-blur-sm transition-all hover:border-violet-500/25 hover:shadow-md open:border-violet-500/30 open:bg-card open:shadow-md md:rounded-3xl md:p-6 dark:bg-background/60 dark:hover:border-violet-400/30"
+                  >
+                    <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-base font-semibold text-foreground [&::-webkit-details-marker]:hidden md:text-[17px]">
+                      <span className="flex gap-4">
+                        <span className="inline-flex h-8 min-w-[2.25rem] items-center justify-center rounded-lg bg-violet-500/10 font-mono text-sm font-semibold text-violet-700 dark:text-violet-300">
+                          {String(faqs.indexOf(faq) + 1).padStart(2, "0")}
+                        </span>
+                        <span className="pt-0.5 leading-snug">{faq.question}</span>
+                      </span>
+                      <Plus className="mt-1 h-5 w-5 shrink-0 rounded-md bg-muted/80 p-0.5 text-violet-600 transition-transform group-open:rotate-45 dark:text-violet-400" />
+                    </summary>
+                    <p className="mt-4 border-t border-border/60 pt-4 text-[15px] leading-relaxed text-muted-foreground md:text-base">
+                      {faq.answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+              {filteredFaqs.length === 0 && (
+                <p className="mt-6 text-center text-sm text-muted-foreground">
+                  No questions match your search.
+                </p>
+              )}
+            </div>
+          </section>
+        </Reveal>
+
+        {/* About + CTA */}
+        <Reveal>
+          <section
+            id="about"
+            className="mt-16 scroll-mt-28 rounded-3xl border border-border/60 bg-gradient-to-br from-card/90 via-card/70 to-muted/30 px-7 py-12 shadow-[0_20px_50px_-24px_hsl(var(--foreground)/0.15)] backdrop-blur-md md:mt-20 md:px-14 md:py-16"
+          >
+            <div className="flex flex-col items-start justify-between gap-10 md:flex-row md:items-center md:gap-12">
+              <div className="max-w-2xl">
+                <p className="text-base font-semibold text-muted-foreground">About FlowPilot</p>
+                <h2 className="mt-3 text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
+                  Take control of your delivery journey
+                  <br />
+                  <span className="text-foreground">Start shipping together — instantly</span>
+                </h2>
+                <p className="mt-5 text-base font-medium leading-relaxed text-muted-foreground md:mt-6 md:text-lg">
+                  Spin up a workspace in minutes, invite your team with clear roles, and move from planning to
+                  execution without tool overload. No heavy setup — just structured work that scales with you.
+                </p>
+              </div>
+              <Link to="/sign-up" className="shrink-0">
                 <Button
                   size="lg"
-                  className="rounded-full px-8 font-bold shadow-md transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="rounded-full px-12 py-7 text-lg font-bold shadow-xl shadow-violet-500/20 transition-all duration-200 hover:scale-[1.04] hover:shadow-2xl hover:shadow-violet-500/25 active:scale-[0.98] md:px-14"
                 >
-                  Start your workspace
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  Get started now
                 </Button>
               </Link>
             </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section id="testimonials" className="mt-16 scroll-mt-28 md:mt-20">
-          <div className="flex flex-col items-center text-center">
-            <span className="rounded-full border border-border/80 bg-muted/40 px-5 py-2 text-sm font-bold uppercase tracking-wider text-muted-foreground shadow-sm backdrop-blur">
-              Testimonials
-            </span>
-            <h2 className="mt-5 text-4xl font-extrabold tracking-tight md:mt-6 md:text-5xl">
-              What our 100+ users say
-            </h2>
-            <p className="mt-3 max-w-2xl text-base font-medium text-muted-foreground md:mt-4 md:text-lg">
-              See what teams say about shipping faster with FlowPilot.
-            </p>
-          </div>
-          <div className="relative mt-10 space-y-5 md:mt-12">
-            <div
-              className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-background to-transparent md:w-20"
-              aria-hidden
-            />
-            <div
-              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-background to-transparent md:w-20"
-              aria-hidden
-            />
-            <TestimonialMarquee items={testimonialsRowOne} />
-            <TestimonialMarquee items={testimonialsRowTwo} reverse />
-          </div>
-        </section>
-
-        {/* FAQ — light, soft accent (readable in light & dark) */}
-        <section
-          id="faq"
-          className="relative mt-16 scroll-mt-28 overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-violet-500/[0.07] via-card/95 to-cyan-500/[0.08] px-6 py-12 shadow-[0_20px_60px_-24px_hsl(var(--foreground)/0.12)] md:mt-20 md:px-12 md:py-16 dark:from-violet-500/10 dark:via-card/90 dark:to-cyan-500/10"
-        >
-          <div
-            className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-500/15"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-cyan-400/15 blur-3xl dark:bg-cyan-500/10"
-            aria-hidden
-          />
-          <div className="relative">
-            <div className="flex flex-col gap-8 border-b border-border/50 pb-10 md:flex-row md:items-end md:justify-between">
-              <div>
-                <h2 className="text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-                  FAQs
-                </h2>
-                <p className="mt-3 text-base font-medium text-muted-foreground md:mt-4 md:text-lg">
-                  Get all your questions answered about FlowPilot.
-                </p>
-              </div>
-              <div className="w-full md:max-w-md">
-                <Input
-                  type="search"
-                  placeholder="Search questions..."
-                  value={faqQuery}
-                  onChange={(e) => setFaqQuery(e.target.value)}
-                  className="h-12 rounded-full border-border/80 bg-background/90 pl-5 text-base shadow-sm backdrop-blur placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-violet-500/35 md:h-14 md:pl-6"
-                />
-              </div>
-            </div>
-            <div className="mt-10 grid gap-4 md:grid-cols-2 md:gap-5">
-              {filteredFaqs.map((faq) => (
-                <details
-                  key={faq.question}
-                  className="group rounded-2xl border border-border/70 bg-background/80 p-5 shadow-sm backdrop-blur-sm transition-all hover:border-violet-500/25 hover:shadow-md open:border-violet-500/30 open:bg-card open:shadow-md md:rounded-3xl md:p-6 dark:bg-background/60 dark:hover:border-violet-400/30"
-                >
-                  <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-base font-semibold text-foreground [&::-webkit-details-marker]:hidden md:text-[17px]">
-                    <span className="flex gap-4">
-                      <span className="inline-flex h-8 min-w-[2.25rem] items-center justify-center rounded-lg bg-violet-500/10 font-mono text-sm font-semibold text-violet-700 dark:text-violet-300">
-                        {String(faqs.indexOf(faq) + 1).padStart(2, "0")}
-                      </span>
-                      <span className="pt-0.5 leading-snug">{faq.question}</span>
-                    </span>
-                    <Plus className="mt-1 h-5 w-5 shrink-0 rounded-md bg-muted/80 p-0.5 text-violet-600 transition-transform group-open:rotate-45 dark:text-violet-400" />
-                  </summary>
-                  <p className="mt-4 border-t border-border/60 pt-4 text-[15px] leading-relaxed text-muted-foreground md:text-base">
-                    {faq.answer}
-                  </p>
-                </details>
-              ))}
-            </div>
-            {filteredFaqs.length === 0 && (
-              <p className="mt-6 text-center text-sm text-muted-foreground">
-                No questions match your search.
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* About + CTA */}
-        <section
-          id="about"
-          className="mt-16 scroll-mt-28 rounded-3xl border border-border/60 bg-gradient-to-br from-card/90 via-card/70 to-muted/30 px-7 py-12 shadow-[0_20px_50px_-24px_hsl(var(--foreground)/0.15)] backdrop-blur-md md:mt-20 md:px-14 md:py-16"
-        >
-          <div className="flex flex-col items-start justify-between gap-10 md:flex-row md:items-center md:gap-12">
-            <div className="max-w-2xl">
-              <p className="text-base font-semibold text-muted-foreground">About FlowPilot</p>
-              <h2 className="mt-3 text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
-                Take control of your delivery journey
-                <br />
-                <span className="text-foreground">Start shipping together — instantly</span>
-              </h2>
-              <p className="mt-5 text-base font-medium leading-relaxed text-muted-foreground md:mt-6 md:text-lg">
-                Spin up a workspace in minutes, invite your team with clear roles, and move from planning to
-                execution without tool overload. No heavy setup — just structured work that scales with you.
-              </p>
-            </div>
-            <Link to="/sign-up" className="shrink-0">
-              <Button
-                size="lg"
-                className="rounded-full px-12 py-7 text-lg font-bold shadow-xl shadow-violet-500/20 transition-all duration-200 hover:scale-[1.04] hover:shadow-2xl hover:shadow-violet-500/25 active:scale-[0.98] md:px-14"
-              >
-                Get started now
-              </Button>
-            </Link>
-          </div>
-        </section>
+          </section>
+        </Reveal>
       </main>
 
       {/* Footer */}
@@ -873,14 +833,19 @@ const Landing = () => {
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground md:flex-row md:px-8">
             <p>© {new Date().getFullYear()} FlowPilot. All rights reserved.</p>
             <div className="flex flex-wrap justify-center gap-5 text-base text-foreground">
-              <a href="#" className="hover:underline">
-                Privacy Policy
+              <a href="#faq" className="hover:underline">
+                FAQs
               </a>
-              <a href="#" className="hover:underline">
-                Terms of Service
+              <a href="#how-it-works" className="hover:underline">
+                How it works
               </a>
-              <a href="#" className="hover:underline">
-                Cookie Settings
+              <a
+                href="https://github.com/subhm2004/FlowPoint"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:underline"
+              >
+                Source
               </a>
             </div>
           </div>
