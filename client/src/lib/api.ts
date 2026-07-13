@@ -1,4 +1,5 @@
 import API from "./axios-client";
+import { TaskStatusEnumType } from "@/constant";
 import {
   AllMembersInWorkspaceResponseType,
   AllProjectPayloadType,
@@ -232,6 +233,25 @@ export const editTaskMutationFn = async ({
   const response = await API.put(
     `/task/${taskId}/project/${projectId}/workspace/${workspaceId}/update/`,
     data
+  );
+  return response.data;
+};
+
+/** Board drag-and-drop. Only `status` moves, so this is a PATCH, not the full task update. */
+export const updateTaskStatusMutationFn = async ({
+  taskId,
+  projectId,
+  workspaceId,
+  status,
+}: {
+  taskId: string;
+  projectId: string;
+  workspaceId: string;
+  status: TaskStatusEnumType;
+}): Promise<{ message: string }> => {
+  const response = await API.patch(
+    `/task/${taskId}/project/${projectId}/workspace/${workspaceId}/status`,
+    { status }
   );
   return response.data;
 };
